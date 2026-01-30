@@ -12,6 +12,17 @@ body.qiyas-real-theme {
     direction: rtl;
 }
 
+/* Fix: Override Main Container Styles */
+main.qiyas-active {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    min-height: 100vh !important;
+    border: none !important; /* Remove any borders if present */
+    box-shadow: none !important;
+}
+
 /* Header: Blue Bar */
 .qiyas-real-header {
     background-color: #0056b3; /* Official-like blue */
@@ -22,6 +33,8 @@ body.qiyas-real-theme {
     align-items: center;
     padding: 0 2rem;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: relative;
+    z-index: 500;
 }
 
 .qiyas-logo {
@@ -43,6 +56,7 @@ body.qiyas-real-theme {
     display: grid;
     grid-template-columns: 300px 1fr; /* Sidebar | Content */
     height: calc(100vh - 60px); /* Minus header */
+    margin-top: 0; /* Ensure no gap */
 }
 
 /* Sidebar (Right Side in RTL) */
@@ -53,6 +67,7 @@ body.qiyas-real-theme {
     flex-direction: column;
     padding: 10px;
     overflow-y: auto;
+    padding-bottom: 70px; /* Space for footer */
 }
 
 .candidate-info {
@@ -110,6 +125,7 @@ body.qiyas-real-theme {
     background: white;
     overflow-y: auto;
     position: relative;
+    padding-bottom: 80px; /* Space for footer */
 }
 
 .question-text-real {
@@ -185,7 +201,7 @@ body.qiyas-real-theme {
     justify-content: space-between;
     padding: 0 2rem;
     direction: rtl; /* Ensure Next is on Left/Right correctly */
-    z-index: 100;
+    z-index: 1000; /* Higher z-index */
 }
 
 .q-btn {

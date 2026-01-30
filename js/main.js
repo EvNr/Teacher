@@ -325,6 +325,7 @@ function startStandardizedTest(testData) {
 
     // Apply REAL Qiyas Theme
     document.body.className = 'qiyas-real-theme'; // Remove all other classes
+    container.classList.add('qiyas-active'); // Apply layout fix to container
 
     // Hide Standard Header/Footer
     const header = document.querySelector('header');
@@ -486,6 +487,7 @@ function startStandardizedTest(testData) {
 
         // Cleanup
         document.body.className = ''; // Reset body class
+        container.classList.remove('qiyas-active'); // Restore container styles
         // Re-apply dark mode if it was on
         if (localStorage.getItem('darkMode') === 'enabled') document.body.classList.add('dark-mode');
 
