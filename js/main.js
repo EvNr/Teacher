@@ -140,54 +140,160 @@ function loadResources() {
         currGrid.appendChild(card);
     });
 
-    // Render Question Bank
-    const questionSection = document.createElement('div');
-    questionSection.className = 'section-block';
-    questionSection.style.marginTop = '3rem';
-    questionSection.innerHTML = '<h3>📝 بنك الأسئلة</h3><div class="card-grid"></div>';
-    const qGrid = questionSection.querySelector('.card-grid');
+    // Render Question Bank (Interactive Quiz Mode)
+    const quizSection = document.createElement('div');
+    quizSection.className = 'section-block';
+    quizSection.style.marginTop = '3rem';
+    quizSection.innerHTML = `
+        <h3>🧠 الاختبار التفاعلي</h3>
+        <div class="quiz-container fade-in">
+            <div class="quiz-header">
+                <span id="quiz-progress">السؤال 1 / ${data.quizzes.length}</span>
+                <span id="quiz-score">النقاط: 0</span>
+            </div>
+            <div id="quiz-content">
+                <!-- Dynamic Quiz Content -->
+            </div>
+        </div>
+    `;
 
-    data.questions.forEach((q, index) => {
-        const card = document.createElement('div');
-        card.className = 'resource-card fade-in';
-        card.innerHTML = `
-            <div class="resource-icon">❓</div>
-            <h4>سؤال ${index + 1}</h4>
-            <p>${q.q}</p>
-            <button class="btn btn-primary btn-sm show-answer">عرض الإجابة</button>
-            <p class="answer hidden" style="margin-top:10px; color:var(--secondary-color); font-weight:bold;">${q.a}</p>
+    // Render Challenges
+    const challengeSection = document.createElement('div');
+    challengeSection.className = 'section-block';
+    challengeSection.style.marginTop = '3rem';
+    challengeSection.innerHTML = '<h3>🏆 التحديات اليومية</h3><div class="card-grid"></div>';
+    const cGrid = challengeSection.querySelector('.card-grid');
+
+    if (data.challenges) {
+        data.challenges.forEach(ch => {
+            const card = document.createElement('div');
+            card.className = 'resource-card challenge-card fade-in';
+            card.innerHTML = `
+                <div class="challenge-badge">${ch.difficulty}</div>
+                <h4>${ch.title}</h4>
+                <p>${ch.description}</p>
+                <div class="xp-reward">+${ch.xp} XP</div>
+                <button class="btn btn-secondary btn-sm" onclick="alert('ابدأ الحل في دفترك ثم تحقق من المعلمة!')">اقبل التحدي</button>
+            `;
+            cGrid.appendChild(card);
+        });
+    }
+
+    // Replace the main grid
+    container.classList.remove('resources-grid');
+    container.innerHTML = ''; // Clear properly
+    container.appendChild(curriculumSection);
+    container.appendChild(challengeSection);
+    container.appendChild(quizSection);
+
+    // Initialize Quiz
+    initQuiz(data.quizzes, quizSection.querySelector('#quiz-content'));
+}
+
+function initQuiz(questions, container) {
+    let current = 0;
+    let score = 0;
+
+    function renderQuestion() {
+        if (current >= questions.length) {
+            // Calculate XP (100 per correct answer)
+            const earnedXP = score * 100;
+            if (earnedXP > 0) addXP(earnedXP);
+
+            container.innerHTML = `
+                <div class="quiz-result">
+                    <h4>🎉 اكتمل الاختبار!</h4>
+                    <p>النتيجة النهائية: ${score} / ${questions.length}</p>
+                    <p style="color:#f39c12; font-weight:bold; margin:10px 0;">+${earnedXP} XP مكتسبة</p>
+                    <button class="btn btn-primary" onclick="location.reload()">إعادة المحاولة</button>
+                </div>
+            `;
+            return;
+        }
+
+        const q = questions[current];
+        container.innerHTML = `
+            <h4 class="quiz-question">${q.question}</h4>
+            <div class="options-grid">
+                ${q.options.map((opt, i) => `
+                    <button class="option-btn" data-index="${i}">${opt}</button>
+                `).join('')}
+            </div>
+            <div id="feedback" class="feedback hidden"></div>
+            <button id="next-btn" class="btn btn-primary hidden" style="margin-top:1rem">التالي &larr;</button>
         `;
 
-        card.querySelector('.show-answer').addEventListener('click', (e) => {
-            const ans = e.target.nextElementSibling;
-            ans.classList.toggle('hidden');
-            e.target.textContent = ans.classList.contains('hidden') ? 'عرض الإجابة' : 'إخفاء الإجابة';
+        // Bind Events
+        const opts = container.querySelectorAll('.option-btn');
+        const feedback = container.querySelector('#feedback');
+        const nextBtn = container.querySelector('#next-btn');
+
+        opts.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Disable all buttons
+                opts.forEach(b => b.disabled = true);
+
+                const selected = parseInt(btn.dataset.index);
+                const isCorrect = selected === q.correct;
+
+                if (isCorrect) {
+                    btn.classList.add('correct');
+                    feedback.innerHTML = `✅ <strong>إجابة صحيحة!</strong> <br> ${q.explanation}`;
+                    feedback.className = 'feedback correct fade-in';
+                    score++;
+                    document.getElementById('quiz-score').textContent = `النقاط: ${score}`;
+                } else {
+                    btn.classList.add('wrong');
+                    opts[q.correct].classList.add('correct'); // Show correct one
+                    feedback.innerHTML = `❌ <strong>إجابة خاطئة!</strong> <br> ${q.explanation}`;
+                    feedback.className = 'feedback wrong fade-in';
+                }
+
+                nextBtn.classList.remove('hidden');
+            });
         });
 
-        qGrid.appendChild(card);
-    });
+        nextBtn.addEventListener('click', () => {
+            current++;
+            document.getElementById('quiz-progress').textContent = `السؤال ${Math.min(current + 1, questions.length)} / ${questions.length}`;
+            renderQuestion();
+        });
+    }
 
-    // Replace the main grid with our new sections
-    // We need to change the CSS of .resources-grid or replace it
-    container.classList.remove('resources-grid');
-    container.appendChild(curriculumSection);
-    container.appendChild(questionSection);
+    renderQuestion();
+}
+
+// User XP Management
+function addXP(amount) {
+    let currentXP = parseInt(localStorage.getItem('userXP') || '0');
+    currentXP += amount;
+    localStorage.setItem('userXP', currentXP);
+    updateNav();
+    alert(`🎉 أحسنت! كسبت ${amount} نقطة XP!`);
 }
 
 // Check Login State for Nav
 function updateNav() {
     const userName = localStorage.getItem('userName');
+    const userXP = localStorage.getItem('userXP') || '0';
+
     const loginLink = document.querySelector('a[href="login.html"]');
     const registerLink = document.querySelector('a[href="register.html"]');
 
     if (userName && loginLink) {
-        loginLink.textContent = '👤 ' + userName;
+        // Display Name and XP
+        loginLink.innerHTML = `
+            <span style="color:var(--secondary-color); font-weight:bold; margin-left:10px;">⭐ ${userXP} XP</span>
+            👤 ${userName}
+        `;
+
         loginLink.href = '#';
         loginLink.addEventListener('click', (e) => {
             e.preventDefault();
             if(confirm('هل تريد تسجيل الخروج؟')) {
                 localStorage.removeItem('userName');
                 localStorage.removeItem('userGrade');
+                localStorage.removeItem('userXP');
                 window.location.reload();
             }
         });
