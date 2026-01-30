@@ -6,6 +6,20 @@
     --text-color: #2c3e50;
     --white: #ffffff;
     --card-bg: #ffffff;
+    --nav-bg: #ffffff;
+    --shadow-color: rgba(0,0,0,0.1);
+}
+
+body.dark-mode {
+    --primary-color: #ecf0f1;
+    --secondary-color: #3498db;
+    --accent-color: #e74c3c;
+    --background-color: #1a1a2e;
+    --text-color: #ecf0f1;
+    --white: #16213e;
+    --card-bg: #16213e;
+    --nav-bg: #16213e;
+    --shadow-color: rgba(0,0,0,0.3);
 }
 
 * {
@@ -28,12 +42,29 @@ a {
 }
 
 header {
-    background-color: var(--white);
-    box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+    background-color: var(--nav-bg);
+    box-shadow: 0 2px 15px var(--shadow-color);
     padding: 1rem 5%;
     position: sticky;
     top: 0;
     z-index: 1000;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.theme-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    margin-left: 20px;
+    padding: 5px;
+    border-radius: 50%;
+    transition: transform 0.3s;
+}
+
+.theme-btn:hover {
+    transform: rotate(15deg) scale(1.1);
+    background-color: rgba(0,0,0,0.05);
 }
 
 nav {
@@ -180,13 +211,16 @@ main {
     background-color: var(--card-bg);
     padding: 2rem;
     border-radius: 15px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+    box-shadow: 0 5px 20px var(--shadow-color);
     text-align: center;
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
 }
 
 .feature-card:hover {
     transform: translateY(-10px);
+    box-shadow: 0 15px 30px var(--shadow-color);
 }
 
 .feature-card h3 {
@@ -431,4 +465,38 @@ footer {
     .resources-grid {
         grid-template-columns: 1fr;
     }
+}
+
+/* Dynamic Content Styles */
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
+    margin-top: 1.5rem;
+}
+
+.section-block h3 {
+    font-size: 1.8rem;
+    color: var(--primary-color);
+    border-right: 5px solid var(--secondary-color);
+    padding-right: 15px;
+    margin-bottom: 1.5rem;
+}
+
+.hidden {
+    display: none;
+}
+
+.alert {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.btn-sm {
+    padding: 0.4rem 1rem;
+    font-size: 0.9rem;
 }
