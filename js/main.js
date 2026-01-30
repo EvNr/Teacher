@@ -325,6 +325,7 @@ function startStandardizedTest(testData) {
 
     // Apply REAL Qiyas Theme
     document.body.className = 'qiyas-real-theme'; // Remove all other classes
+    container.classList.remove('fade-in'); // Remove fade animation to prevent transform issues
     container.classList.add('qiyas-active'); // Apply layout fix to container
 
     // Hide Standard Header/Footer
@@ -488,6 +489,8 @@ function startStandardizedTest(testData) {
         // Cleanup
         document.body.className = ''; // Reset body class
         container.classList.remove('qiyas-active'); // Restore container styles
+        container.classList.add('fade-in'); // Restore fade animation
+
         // Re-apply dark mode if it was on
         if (localStorage.getItem('darkMode') === 'enabled') document.body.classList.add('dark-mode');
 
