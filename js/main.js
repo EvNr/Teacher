@@ -318,154 +318,165 @@ function loadResources() {
     initQuiz(data.quizzes, quizSection.querySelector('#quiz-content'));
 }
 
-// --- Qiyas Simulation Engine (Mock Qudrat/Tahsili) ---
+// --- Qiyas Simulation Engine (REAL DESIGN MATCH) ---
 function startStandardizedTest(testData) {
     const container = document.getElementById('app');
     if (!container) return;
 
-    // Apply Qiyas Mode Styling to Body
-    document.body.classList.add('qiyas-mode-body');
+    // Apply REAL Qiyas Theme
+    document.body.className = 'qiyas-real-theme'; // Remove all other classes
+
     // Hide Standard Header/Footer
     const header = document.querySelector('header');
     const footer = document.querySelector('footer');
     if (header) header.style.display = 'none';
     if (footer) footer.style.display = 'none';
 
+    // Link new CSS if not already (dynamically added for this session)
+    if (!document.getElementById('qiyas-css')) {
+        const link = document.createElement('link');
+        link.id = 'qiyas-css';
+        link.rel = 'stylesheet';
+        link.href = 'css/qiyas.css';
+        document.head.appendChild(link);
+    }
+
     // Initialize State
     let current = 0;
     let answers = new Array(testData.questions.length).fill(null);
     let flagged = new Array(testData.questions.length).fill(false);
-    let timeLeft = testData.duration * 60; // seconds
+    let timeLeft = testData.duration * 60;
     let timerInterval;
 
-    // Render Layout
+    // Render Layout (Exact Qiyas Replica)
     container.innerHTML = `
-        <div class="qiyas-container fade-in">
-            <!-- Sidebar: Navigation Grid -->
-            <aside class="qiyas-sidebar">
-                <h4>قائمة الأسئلة (${testData.questions.length})</h4>
-                <div class="question-nav-grid" id="nav-grid">
-                    ${testData.questions.map((_, i) => `
-                        <div class="nav-dot" data-index="${i}">${i + 1}</div>
-                    `).join('')}
+        <div class="qiyas-real-header">
+            <div class="qiyas-timer" id="qiyas-real-timer">⏳ --:--</div>
+            <div class="qiyas-logo">مركز قياس | ${testData.title}</div>
+            <div>الطالبة: ${JSON.parse(localStorage.getItem('currentUser') || '{}').name || 'زائر'}</div>
+        </div>
+
+        <div class="qiyas-layout">
+            <!-- Sidebar (Right) -->
+            <aside class="qiyas-sidebar-real">
+                <div class="candidate-info">
+                    <strong>رقم المشترك:</strong> 105439<br>
+                    <strong>السجل المدني:</strong> **********
                 </div>
-                <div style="margin-top:auto;">
-                    <div style="display:flex; align-items:center; gap:5px; margin-bottom:5px;"><span style="width:10px; height:10px; background:#2ecc71; display:inline-block; border-radius:50%;"></span> مجاب</div>
-                    <div style="display:flex; align-items:center; gap:5px; margin-bottom:5px;"><span style="width:10px; height:10px; background:#f1c40f; display:inline-block; border-radius:50%;"></span> مراجع</div>
-                    <div style="display:flex; align-items:center; gap:5px;"><span style="width:10px; height:10px; background:#eee; display:inline-block; border-radius:50%;"></span> غير مجاب</div>
+
+                <h4>مستكشف الأسئلة</h4>
+                <div class="nav-grid-real" id="real-nav-grid">
+                    ${testData.questions.map((_, i) => `
+                        <div class="nav-circle" data-index="${i}">${i + 1}</div>
+                    `).join('')}
                 </div>
             </aside>
 
-            <!-- Main: Question Area -->
-            <main class="qiyas-main">
-                <div class="qiyas-header">
-                    <h2>${testData.title}</h2>
-                    <div class="timer-box" id="qiyas-timer">⏳ --:--</div>
-                </div>
-
-                <div class="question-area" id="question-area">
-                    <!-- Dynamic Question Render -->
-                </div>
-
-                <div class="qiyas-footer">
-                    <div>
-                        <button class="control-btn btn-prev" id="btn-prev">السابق</button>
-                        <button class="control-btn btn-flag" id="btn-flag">⚑ مراجعة</button>
-                    </div>
-                    <div>
-                        <button class="control-btn btn-next" id="btn-next">التالي</button>
-                        <button class="control-btn btn-submit" id="btn-submit" style="display:none; margin-right:10px;">إنهاء الاختبار</button>
-                    </div>
-                </div>
+            <!-- Main Question Area (Left) -->
+            <main class="qiyas-content-real" id="real-content">
+                <!-- Dynamic Content -->
             </main>
         </div>
+
+        <footer class="qiyas-footer-real">
+            <div>
+                <button class="q-btn btn-prev" id="btn-real-prev">السابق</button>
+                <button class="q-btn flag-btn" id="btn-real-flag">⚑ مراجعة</button>
+            </div>
+            <div>
+                <button class="q-btn primary" id="btn-real-next">التالي</button>
+                <button class="q-btn primary" id="btn-real-submit" style="display:none; background:#27ae60;">إنهاء الاختبار</button>
+            </div>
+        </footer>
     `;
 
-    // Timer Logic
+    // Timer
     timerInterval = setInterval(() => {
         timeLeft--;
         const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
         const s = (timeLeft % 60).toString().padStart(2, '0');
-        const timerEl = document.getElementById('qiyas-timer');
+        const timerEl = document.getElementById('qiyas-real-timer');
         if (timerEl) timerEl.textContent = `⏳ ${m}:${s}`;
-
-        if (timeLeft <= 0) {
-            finishExam(true);
-        }
+        if (timeLeft <= 0) finishExam(true);
     }, 1000);
 
-    // Render Function
+    // Render Question Function
     function renderQuestion(idx) {
         current = idx;
         const q = testData.questions[current];
-        const area = document.getElementById('question-area');
+        const area = document.getElementById('real-content');
 
         area.innerHTML = `
-            <div class="q-number">سؤال ${current + 1}</div>
-            <div class="q-text">${q.question}</div>
-            <div class="qiyas-options">
+            <div class="question-text-real">
+                <strong>سؤال ${current + 1}:</strong><br>
+                ${q.question}
+            </div>
+            <div class="options-list-real">
                 ${q.options.map((opt, i) => `
-                    <div class="qiyas-option ${answers[current] === i ? 'selected' : ''}" data-val="${i}">
-                        <div class="radio-circle"></div>
+                    <div class="option-real ${answers[current] === i ? 'selected' : ''}" data-val="${i}">
+                        <div class="radio-real"></div>
                         <span>${opt}</span>
                     </div>
                 `).join('')}
             </div>
         `;
 
-        // Update Nav Grid
-        document.querySelectorAll('.nav-dot').forEach((dot, i) => {
-            dot.classList.remove('active');
-            if (i === current) dot.classList.add('active');
+        // Update Grid Colors (Strict Logic)
+        document.querySelectorAll('.nav-circle').forEach((dot, i) => {
+            dot.className = 'nav-circle'; // Reset
 
-            dot.classList.remove('answered');
-            if (answers[i] !== null) dot.classList.add('answered');
+            if (i === current) dot.classList.add('current');
 
-            dot.classList.remove('flagged');
-            if (flagged[i]) dot.classList.add('flagged');
+            // Logic: Answered = Green, Flagged = Yellow (Overrides Green visually or logic?)
+            // User request: "Yellow if Review". Review usually implies Flagged.
+
+            if (flagged[i]) {
+                dot.classList.add('flagged');
+            } else if (answers[i] !== null) {
+                dot.classList.add('answered');
+            }
+            // Default is Grey (base class)
         });
 
         // Update Buttons
-        document.getElementById('btn-prev').disabled = current === 0;
-        document.getElementById('btn-next').style.display = current === testData.questions.length - 1 ? 'none' : 'inline-block';
-        document.getElementById('btn-submit').style.display = current === testData.questions.length - 1 ? 'inline-block' : 'none';
+        document.getElementById('btn-real-prev').disabled = current === 0;
+        document.getElementById('btn-real-next').style.display = current === testData.questions.length - 1 ? 'none' : 'inline-block';
+        document.getElementById('btn-real-submit').style.display = current === testData.questions.length - 1 ? 'inline-block' : 'none';
 
-        // Update Flag Button Text
-        const flagBtn = document.getElementById('btn-flag');
+        // Update Flag Text
+        const flagBtn = document.getElementById('btn-real-flag');
         flagBtn.innerHTML = flagged[current] ? '⚑ إلغاء المراجعة' : '⚑ مراجعة';
 
         // Bind Option Clicks
-        area.querySelectorAll('.qiyas-option').forEach(opt => {
+        area.querySelectorAll('.option-real').forEach(opt => {
             opt.addEventListener('click', () => {
                 const val = parseInt(opt.dataset.val);
                 answers[current] = val;
-                renderQuestion(current); // Re-render to show selection
+                renderQuestion(current); // Re-render instantly
             });
         });
     }
 
-    // Event Listeners
-    document.getElementById('btn-next').addEventListener('click', () => {
+    // Listeners
+    document.getElementById('btn-real-next').addEventListener('click', () => {
         if (current < testData.questions.length - 1) renderQuestion(current + 1);
     });
 
-    document.getElementById('btn-prev').addEventListener('click', () => {
+    document.getElementById('btn-real-prev').addEventListener('click', () => {
         if (current > 0) renderQuestion(current - 1);
     });
 
-    document.getElementById('btn-flag').addEventListener('click', () => {
+    document.getElementById('btn-real-flag').addEventListener('click', () => {
         flagged[current] = !flagged[current];
         renderQuestion(current);
     });
 
-    document.getElementById('btn-submit').addEventListener('click', () => {
-        if(confirm('هل أنت متأكد من إنهاء الاختبار وتسليم الإجابة؟')) {
-            finishExam(false);
-        }
+    document.getElementById('btn-real-submit').addEventListener('click', () => {
+        if(confirm('هل أنت متأكد من إنهاء الاختبار؟')) finishExam(false);
     });
 
-    document.getElementById('nav-grid').addEventListener('click', (e) => {
-        if(e.target.classList.contains('nav-dot')) {
+    document.getElementById('real-nav-grid').addEventListener('click', (e) => {
+        if(e.target.classList.contains('nav-circle')) {
             renderQuestion(parseInt(e.target.dataset.index));
         }
     });
@@ -473,45 +484,46 @@ function startStandardizedTest(testData) {
     function finishExam(forced) {
         clearInterval(timerInterval);
 
-        // Calculate Score
-        let score = 0;
-        testData.questions.forEach((q, i) => {
-            if (answers[i] === q.correct) score++;
-        });
+        // Cleanup
+        document.body.className = ''; // Reset body class
+        // Re-apply dark mode if it was on
+        if (localStorage.getItem('darkMode') === 'enabled') document.body.classList.add('dark-mode');
 
-        // Calculate XP
-        const xpEarned = score * 50; // 50 XP per question in standardized test
-        addXP(xpEarned);
-
-        // Restore UI
-        document.body.classList.remove('qiyas-mode-body');
         if (header) header.style.display = 'block';
         if (footer) footer.style.display = 'block';
 
+        // Score
+        let score = 0;
+        testData.questions.forEach((q, i) => { if (answers[i] === q.correct) score++; });
+        const earnedXP = score * 50;
+        addXP(earnedXP);
+
+        // Result Screen
         container.innerHTML = `
             <div class="auth-container fade-in">
-                <div class="auth-box" style="max-width:600px;">
-                    <h2>${forced ? '⏰ انتهى الوقت!' : '✅ تم تسليم الاختبار'}</h2>
-                    <h3>النتيجة: ${score} / ${testData.questions.length}</h3>
-                    <p style="font-size:1.2rem; color:var(--secondary-color); margin:1rem 0;">+${xpEarned} XP</p>
-                    <div style="text-align:right; margin-top:2rem;">
-                        <h4>تحليل الإجابات:</h4>
-                        <ul style="list-style:none; padding:0;">
-                            ${testData.questions.map((q, i) => `
-                                <li style="margin-bottom:10px; padding:10px; border-bottom:1px solid #eee; background:${answers[i] === q.correct ? '#d4edda' : '#f8d7da'}">
-                                    <strong>س${i+1}:</strong> ${answers[i] === q.correct ? 'صحيحة' : 'خاطئة'}
-                                    <br><small>${q.explanation}</small>
-                                </li>
-                            `).join('')}
-                        </ul>
+                <div class="auth-box" style="max-width:800px;">
+                    <h2>${forced ? '⏰ انتهى الوقت!' : '✅ تم الاختبار'}</h2>
+                    <div style="display:flex; justify-content:space-around; margin:2rem 0;">
+                        <div><h3>${score} / ${testData.questions.length}</h3><p>الدرجة</p></div>
+                        <div><h3 style="color:#f39c12">+${earnedXP}</h3><p>نقاط XP</p></div>
                     </div>
-                    <button class="btn btn-primary full-width" onclick="location.reload()">العودة للرئيسية</button>
+                    <div style="text-align:right; max-height:400px; overflow-y:auto; border:1px solid #eee; padding:1rem;">
+                        ${testData.questions.map((q, i) => `
+                            <div style="margin-bottom:1rem; border-bottom:1px solid #eee; padding-bottom:1rem;">
+                                <div style="color:${answers[i] === q.correct ? 'green' : 'red'}; font-weight:bold;">
+                                    س${i+1}: ${answers[i] === q.correct ? 'إجابة صحيحة' : 'إجابة خاطئة'}
+                                </div>
+                                <p>${q.question}</p>
+                                <p style="font-size:0.9rem; color:#666;">الإجابة الصحيحة: ${q.options[q.correct]}<br>تفسير: ${q.explanation}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button class="btn btn-primary full-width" onclick="location.reload()">العودة</button>
                 </div>
             </div>
         `;
     }
 
-    // Start
     renderQuestion(0);
 }
 
