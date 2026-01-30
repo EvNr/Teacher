@@ -1,13 +1,21 @@
 // Sabreen Math Academy Data Store
 // Curriculum: 1447 Edition
 
+// 1. Mock Users Database
+const MOCK_USERS = {
+    "user1@user.com": { name: "طالبة أول ثانوي", grade: "10", password: "password", email: "user1@user.com" },
+    "user2@user.com": { name: "طالبة ثاني ثانوي", grade: "11", password: "password", email: "user2@user.com" },
+    "user3@user.com": { name: "طالبة ثالث ثانوي", grade: "12", password: "password", email: "user3@user.com" }
+};
+
+// 2. Academy Content Data
 const ACADEMY_DATA = {
     "10": {
         title: "الصف الأول ثانوي (مسارات)",
         subtitle: "الرياضيات 1-1 | السنة الأولى المشتركة",
         curriculum: [
             {
-                title: "كتاب الرياضيات 1-1 (المنهج كاملاً)",
+                title: "كتاب الرياضيات 1-1 (المنهج كاملاً 1447)",
                 type: "pdf",
                 link: "https://www.wajibati.net/wp-content/uploads/2025/08/ki-ry1sf3_1_8affgfja4d.pdf",
                 featured: true
@@ -33,31 +41,20 @@ const ACADEMY_DATA = {
             },
             {
                 id: 3,
-                question: "في العبارة الشرطية p -> q، ماذا تسمى p؟",
+                question: "في العبارة الشرطية p ➝ q، ماذا تسمى p؟",
                 options: ["النتيجة", "الفرض", "التبرير", "المسلمة"],
                 correct: 1,
                 explanation: "في العبارة الشرطية، الجزء الذي يلي 'إذا' هو الفرض (p)."
-            },
-            {
-                id: 4,
-                question: "إذا كان مجموع قياس زاويتين 90 درجة، فإنهما:",
-                options: ["متكاملتان", "متتامتان", "متقابلتان بالرأس", "منفرجتان"],
-                correct: 1,
-                explanation: "الزاويتان المتتامتان هما اللتان مجموع قياسهما 90 درجة."
             }
         ],
         challenges: [
             {
+                id: "c10_1",
                 title: "تحدي الأسبوع",
-                description: "أثبت أن مجموع قياسات زوايا المثلث يساوي 180 درجة باستخدام مسلمة التوازي.",
+                description: "أثبت أن مجموع قياسات زوايا المثلث يساوي 180° باستخدام مسلمة التوازي.",
                 difficulty: "Hard",
-                xp: 500
-            },
-            {
-                title: "لغز هندسي",
-                description: "كم عدد المثلثات الموجودة في شكل خماسي الأضلاع مرسوم بداخله جميع الأقطار؟",
-                difficulty: "Medium",
-                xp: 300
+                xp: 500,
+                solution: "برسم مستقيم يوازي القاعدة ويمر بالرأس الثالث، وباستخدام نظرية الزوايا المتبادلة داخلياً، نجد أن مجموع الزوايا المستقيمة 180 درجة، وهي تطابق مجموع زوايا المثلث."
             }
         ]
     },
@@ -65,7 +62,12 @@ const ACADEMY_DATA = {
         title: "الصف الثاني ثانوي (مسارات)",
         subtitle: "الرياضيات 2-1 | السنة الثانية",
         curriculum: [
-            { title: "كتاب الرياضيات 2-1", type: "pdf", link: "#" },
+            {
+                title: "كتاب الرياضيات 2-1 (المنهج كاملاً 1447)",
+                type: "pdf",
+                link: "https://www.wajibati.net/wp-content/uploads/2025/08/ki-ry2sf1_1_c5zd2b66xy.pdf",
+                featured: true
+            },
             { title: "الفصل 1: الدوال والمتباينات", type: "video", link: "#" },
             { title: "الفصل 2: المصفوفات", type: "video", link: "#" }
         ],
@@ -79,18 +81,20 @@ const ACADEMY_DATA = {
             },
             {
                 id: 2,
-                question: "مجموعة الأعداد التي لا يمكن كتابتها على صورة كسر a/b تسمى:",
-                options: ["الأعداد النسبية", "الأعداد غير النسبية", "الأعداد الصحيحة", "الأعداد الطبيعية"],
+                question: "بسط المقدار: i¹⁵ (حيث i هو العدد التخيلي)",
+                options: ["i", "-i", "1", "-1"],
                 correct: 1,
-                explanation: "مثل الجذور الصماء (جذر 2) والعدد ط (pi)."
+                explanation: "i¹⁵ = i¹² × i³ = 1 × -i = -i"
             }
         ],
         challenges: [
             {
+                id: "c11_1",
                 title: "تحدي المصفوفات",
                 description: "حل نظام معادلات خطية مكون من 3 متغيرات باستخدام قاعدة كرامر.",
                 difficulty: "Hard",
-                xp: 600
+                xp: 600,
+                solution: "نوجد المحدد العام للمصفوفة (D). إذا كان D ≠ 0، نوجد محددات المتغيرات (Dx, Dy, Dz). الحل يكون x=Dx/D, y=Dy/D, z=Dz/D."
             }
         ]
     },
@@ -98,7 +102,12 @@ const ACADEMY_DATA = {
         title: "الصف الثالث ثانوي (مسارات)",
         subtitle: "الرياضيات 3-1 | السنة الثالثة",
         curriculum: [
-            { title: "كتاب الرياضيات 3-1", type: "pdf", link: "#" },
+            {
+                title: "كتاب الرياضيات 3-1 (المنهج كاملاً 1447)",
+                type: "pdf",
+                link: "https://www.wajibati.net/wp-content/uploads/2025/08/kp-ry3sf1_1_wm99k40zrh.pdf",
+                featured: true
+            },
             { title: "الفصل 1: التحليل الرسومي", type: "video", link: "#" },
             { title: "الفصل 2: النهايات والاشتقاق", type: "video", link: "#" }
         ],
@@ -106,27 +115,30 @@ const ACADEMY_DATA = {
             {
                 id: 1,
                 question: "أي من الدوال التالية تعتبر دالة زوجية؟",
-                options: ["د(س) = س^2", "د(س) = س^3", "د(س) = س + 1", "د(س) = جا(س)"],
+                options: ["f(x) = x²", "f(x) = x³", "f(x) = x + 1", "f(x) = sin(x)"],
                 correct: 0,
-                explanation: "الدالة الزوجية تحقق د(-س) = د(س)، وس^2 تحقق ذلك."
+                explanation: "الدالة الزوجية تحقق f(-x) = f(x)، و x² تحقق ذلك."
             },
             {
                 id: 2,
-                question: "قيمة نهاية (1/س) عندما س تؤول إلى مالانهاية هي:",
-                options: ["0", "1", "مالانهاية", "غير معرفة"],
+                question: "أوجد قيمة: lim (x→∞) (1/x)",
+                options: ["0", "1", "∞", "غير معرفة"],
                 correct: 0,
                 explanation: "كلما كبر المقام، اقتربت قيمة الكسر من الصفر."
             }
         ],
         challenges: [
             {
+                id: "c12_1",
                 title: "تحدي التفاضل",
-                description: "أوجد معادلة المماس لمنحنى الدالة د(س) = س^3 - 3س عند النقطة (2, 2).",
+                description: "أوجد معادلة المماس لمنحنى الدالة <span class='math'>f(x) = x³ - 3x</span> عند النقطة <span class='math'>(2, 2)</span>.",
                 difficulty: "Medium",
-                xp: 450
+                xp: 450,
+                solution: "1. نشتق الدالة: <span class='math'>f'(x) = 3x² - 3</span>.<br>2. نعوض بـ x=2 لإيجاد الميل: <span class='math'>m = 3(2)² - 3 = 9</span>.<br>3. معادلة المستقيم: <span class='math'>y - y₁ = m(x - x₁)</span>.<br>4. <span class='math'>y - 2 = 9(x - 2)</span> ➝ <span class='math'>y = 9x - 16</span>."
             }
         ]
     }
 };
 
+window.MOCK_USERS = MOCK_USERS;
 window.ACADEMY_DATA = ACADEMY_DATA;

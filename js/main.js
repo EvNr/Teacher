@@ -41,18 +41,54 @@ function initTheme() {
     }
 }
 
-// User Session Management
+// User Session Management & Auto-Logout
 const registerForm = document.getElementById('registerForm');
 const loginForm = document.getElementById('loginForm');
 
+// Auto Logout Logic
+let activityTimer;
+const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 Minutes
+
+function resetActivityTimer() {
+    clearTimeout(activityTimer);
+    if (localStorage.getItem('currentUser')) {
+        activityTimer = setTimeout(logoutUser, INACTIVITY_LIMIT);
+    }
+}
+
+function logoutUser() {
+    alert('⚠️ تم تسجيل الخروج تلقائياً لعدم النشاط حفاظاً على أمانك.');
+    localStorage.removeItem('currentUser');
+    window.location.href = 'login.html';
+}
+
+if (localStorage.getItem('currentUser')) {
+    // Attach event listeners for activity
+    window.onload = resetActivityTimer;
+    document.onmousemove = resetActivityTimer;
+    document.onkeypress = resetActivityTimer;
+    document.onclick = resetActivityTimer;
+}
+
+// Authentication Logic
 if (registerForm) {
     registerForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const name = document.getElementById('fullname').value;
         const grade = document.getElementById('grade').value;
+        const email = document.getElementById('email').value;
 
-        localStorage.setItem('userName', name);
-        localStorage.setItem('userGrade', grade);
+        // Create simplified user key for mock persistence
+        const userKey = email.split('@')[0];
+
+        const userData = {
+            name: name,
+            grade: grade,
+            email: email,
+            id: userKey
+        };
+
+        localStorage.setItem('currentUser', JSON.stringify(userData));
 
         alert('تم إنشاء الحساب بنجاح! مرحباً بك يا ' + name);
         window.location.href = 'resources.html';
@@ -62,23 +98,32 @@ if (registerForm) {
 if (loginForm) {
     loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        // Mock Login - accepts any input for demo, but we need to know the grade
-        // Since we don't have a real DB, we'll ask the user to 're-confirm' grade or just use a default if not found
-        // For this demo, we'll simulate a login that sets a session.
-
-        // Check if we have a stored user, if not, prompt or just mock it
         const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
 
-        // For demonstration purposes, if no user is found, we assume a default grade 12 (3rd Secondary)
-        // Or we can rely on what was registered.
-        let grade = localStorage.getItem('userGrade');
-        if (!grade) {
-            grade = "12"; // Default fallback
-            localStorage.setItem('userGrade', grade);
-            localStorage.setItem('userName', 'Student');
+        // Check against MOCK_USERS
+        if (typeof MOCK_USERS !== 'undefined' && MOCK_USERS[email]) {
+            const user = MOCK_USERS[email];
+            if (password === user.password) {
+                // Login Success
+                const userKey = email.split('@')[0];
+                const userData = {
+                    name: user.name,
+                    grade: user.grade,
+                    email: user.email,
+                    id: userKey
+                };
+                localStorage.setItem('currentUser', JSON.stringify(userData));
+                window.location.href = 'resources.html';
+                return;
+            } else {
+                alert('❌ كلمة المرور غير صحيحة');
+                return;
+            }
         }
 
-        window.location.href = 'resources.html';
+        // Fallback for demo/registration
+        alert('❌ البريد الإلكتروني غير مسجل في النظام');
     });
 }
 
@@ -93,13 +138,14 @@ function loadResources() {
 
     if (!container || !header) return;
 
-    const userGrade = localStorage.getItem('userGrade');
-    const userName = localStorage.getItem('userName');
+    const user = JSON.parse(localStorage.getItem('currentUser'));
 
-    if (!userGrade) {
+    if (!user) {
         container.innerHTML = '<div class="alert">يرجى تسجيل الدخول للوصول إلى المحتوى التعليمي. <a href="login.html">تسجيل الدخول</a></div>';
         return;
     }
+
+    const userGrade = user.grade;
 
     // Load Data from global ACADEMY_DATA
     if (typeof ACADEMY_DATA === 'undefined') {
@@ -115,9 +161,9 @@ function loadResources() {
 
     // Update Header
     header.innerHTML = `
-        <h1>مرحباً ${userName || ''}</h1>
+        <h1>مرحباً ${user.name || ''}</h1>
         <h2>${data.title}</h2>
-        <p>محتوى مخصص لمنهج 1447</p>
+        <p class="subtitle">${data.subtitle || 'محتوى مخصص لمنهج 1447'}</p>
     `;
 
     // Clear Container
@@ -168,14 +214,47 @@ function loadResources() {
         data.challenges.forEach(ch => {
             const card = document.createElement('div');
             card.className = 'resource-card challenge-card fade-in';
+
+            // Check if solved (simple check for now)
+            const isSolved = false;
+
             card.innerHTML = `
                 <div class="challenge-badge">${ch.difficulty}</div>
                 <h4>${ch.title}</h4>
-                <p>${ch.description}</p>
+                <p class="challenge-desc">${ch.description}</p>
                 <div class="xp-reward">+${ch.xp} XP</div>
-                <button class="btn btn-secondary btn-sm" onclick="alert('ابدأ الحل في دفترك ثم تحقق من المعلمة!')">اقبل التحدي</button>
+
+                <div class="challenge-actions">
+                    <button class="btn btn-secondary btn-sm show-solution-btn">عرض الحل</button>
+                </div>
+
+                <div class="solution-box hidden">
+                    <h5>💡 الحل النموذجي:</h5>
+                    <div class="solution-content">${ch.solution}</div>
+                    <button class="btn btn-primary btn-sm mark-done-btn" data-xp="${ch.xp}">تسجيل كمنجز (+XP)</button>
+                </div>
             `;
             cGrid.appendChild(card);
+        });
+
+        // Bind Challenge Events
+        challengeSection.querySelectorAll('.show-solution-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const solutionBox = e.target.parentElement.nextElementSibling;
+                solutionBox.classList.toggle('hidden');
+                e.target.textContent = solutionBox.classList.contains('hidden') ? 'عرض الحل' : 'إخفاء الحل';
+            });
+        });
+
+        challengeSection.querySelectorAll('.mark-done-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const xp = parseInt(e.target.dataset.xp);
+                addXP(xp);
+                e.target.disabled = true;
+                e.target.textContent = 'تم الإنجاز ✅';
+                // Hide solution button as well to clean up
+                e.target.parentElement.previousElementSibling.style.display = 'none';
+            });
         });
     }
 
@@ -263,38 +342,55 @@ function initQuiz(questions, container) {
     renderQuestion();
 }
 
-// User XP Management
+// User XP Management (User Specific)
 function addXP(amount) {
-    let currentXP = parseInt(localStorage.getItem('userXP') || '0');
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    if (!user) return;
+
+    const xpKey = `xp_${user.id}`;
+    let currentXP = parseInt(localStorage.getItem(xpKey) || '0');
     currentXP += amount;
-    localStorage.setItem('userXP', currentXP);
+
+    localStorage.setItem(xpKey, currentXP);
     updateNav();
-    alert(`🎉 أحسنت! كسبت ${amount} نقطة XP!`);
+
+    // Custom non-intrusive notification instead of alert
+    showToast(`🎉 أحسنت! كسبت ${amount} نقطة XP!`);
+}
+
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast fade-in';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
 }
 
 // Check Login State for Nav
 function updateNav() {
-    const userName = localStorage.getItem('userName');
-    const userXP = localStorage.getItem('userXP') || '0';
+    const user = JSON.parse(localStorage.getItem('currentUser'));
 
     const loginLink = document.querySelector('a[href="login.html"]');
     const registerLink = document.querySelector('a[href="register.html"]');
 
-    if (userName && loginLink) {
+    if (user && loginLink) {
+        const xpKey = `xp_${user.id}`;
+        const userXP = localStorage.getItem(xpKey) || '0';
+
         // Display Name and XP
         loginLink.innerHTML = `
             <span style="color:var(--secondary-color); font-weight:bold; margin-left:10px;">⭐ ${userXP} XP</span>
-            👤 ${userName}
+            👤 ${user.name}
         `;
 
         loginLink.href = '#';
         loginLink.addEventListener('click', (e) => {
             e.preventDefault();
             if(confirm('هل تريد تسجيل الخروج؟')) {
-                localStorage.removeItem('userName');
-                localStorage.removeItem('userGrade');
-                localStorage.removeItem('userXP');
-                window.location.reload();
+                localStorage.removeItem('currentUser');
+                window.location.href = 'index.html';
             }
         });
 
