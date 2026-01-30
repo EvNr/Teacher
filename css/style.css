@@ -699,3 +699,122 @@ body.dark-mode .math {
     border-color: #465c71;
     color: #ecf0f1;
 }
+
+/* --- Dark Mode Remediation & Fixes --- */
+
+/* Fix 1: Ensure body background respects the variable */
+body {
+    background-color: var(--background-color) !important;
+    color: var(--text-color);
+}
+
+/* Fix 2: Inputs in Dark Mode */
+body.dark-mode input,
+body.dark-mode select {
+    background-color: #1f2a40;
+    color: #ecf0f1;
+    border-color: #4a5568;
+}
+
+body.dark-mode input:focus,
+body.dark-mode select:focus {
+    border-color: var(--secondary-color);
+}
+
+/* Fix 3: Card and Box Contrast */
+body.dark-mode .resource-card,
+body.dark-mode .quiz-container,
+body.dark-mode .auth-box,
+body.dark-mode .feature-card {
+    background-color: #16213e; /* Ensure this matches the variable */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.5); /* Stronger shadow for depth */
+    border: 1px solid #2c3e50;
+}
+
+/* Fix 4: Typography & Headers */
+body.dark-mode h1,
+body.dark-mode h2,
+body.dark-mode h3,
+body.dark-mode h4,
+body.dark-mode h5 {
+    color: #ecf0f1 !important;
+}
+
+body.dark-mode .subtitle,
+body.dark-mode p {
+    color: #bdc3c7;
+}
+
+/* Fix 5: Buttons & Links */
+body.dark-mode .btn-secondary {
+    background-color: transparent;
+    color: #ecf0f1;
+    border-color: #ecf0f1;
+}
+
+body.dark-mode .btn-secondary:hover {
+    background-color: #ecf0f1;
+    color: #2c3e50;
+}
+
+body.dark-mode .auth-link {
+    color: #bdc3c7;
+}
+
+/* Fix 6: Math Elements */
+body.dark-mode .math {
+    background-color: #0f172a;
+    color: #ffd700; /* Gold for math symbols to pop */
+    border-color: #334155;
+}
+
+/* Fix 7: Quiz Feedback */
+body.dark-mode .feedback.correct {
+    background-color: rgba(21, 87, 36, 0.4);
+    color: #d4edda;
+    border: 1px solid #155724;
+}
+
+body.dark-mode .feedback.wrong {
+    background-color: rgba(114, 28, 36, 0.4);
+    color: #f8d7da;
+    border: 1px solid #721c24;
+}
+
+/* Time Badge for Challenges */
+.time-badge {
+    position: absolute;
+    top: 10px;
+    left: auto;
+    right: 10px; /* Opposite side of difficulty badge */
+    background: rgba(0,0,0,0.05);
+    color: #e67e22;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    border: 1px solid rgba(230, 126, 34, 0.3);
+}
+
+body.dark-mode .time-badge {
+    background: rgba(230, 126, 34, 0.1);
+    color: #e67e22;
+}
+
+/* Timer Badge in Quiz */
+.timer-badge {
+    background: #e74c3c;
+    color: white;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    box-shadow: 0 2px 10px rgba(231, 76, 60, 0.3);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}

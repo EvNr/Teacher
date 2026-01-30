@@ -140,5 +140,59 @@ const ACADEMY_DATA = {
     }
 };
 
+// Standardized Tests Data (Qudrat & Tahsili)
+const STANDARDIZED_TESTS = {
+    "qudrat": {
+        title: "اختبار القدرات العامة (تجريبي)",
+        description: "اختبار يحاكي اختبار قياس للقدرات العامة (الكمي واللفظي).",
+        duration: 15, // minutes
+        questions: [
+            {
+                id: "q1",
+                question: "قارن بين: القيمة الأولى (0.40)، القيمة الثانية (2/5)",
+                options: ["القيمة الأولى أكبر", "القيمة الثانية أكبر", "القيمتان متساويتان", "المعطيات غير كافية"],
+                correct: 2,
+                explanation: "2/5 = 0.4، إذاً 0.40 = 0.4. القيمتان متساويتان."
+            },
+            {
+                id: "q2",
+                question: "إذا كان ثمن 3 أقلام ودفتر 15 ريال، وثمن 3 أقلام ودفترين 20 ريال، فما ثمن الدفتر؟",
+                options: ["3 ريال", "4 ريال", "5 ريال", "6 ريال"],
+                correct: 2,
+                explanation: "الفرق بين المعادلتين هو دفتر واحد. 20 - 15 = 5 ريال."
+            },
+            {
+                id: "q3",
+                question: "أكمل المتتابعة: 3، 7، 15، 31، ...",
+                options: ["63", "60", "58", "65"],
+                correct: 0,
+                explanation: "كل حد يساوي ضعف الحد السابق زائد 1. (31 × 2) + 1 = 63."
+            }
+        ]
+    },
+    "tahsili": {
+        title: "الاختبار التحصيلي (رياضيات)",
+        description: "أسئلة تحصيلية تغطي مناهج المرحلة الثانوية.",
+        duration: 20, // minutes
+        questions: [
+            {
+                id: "t1",
+                question: "ما قيمة log₂(32)؟",
+                options: ["3", "4", "5", "6"],
+                correct: 2,
+                explanation: "2 أس 5 = 32، لذا اللوغاريتم يساوي 5."
+            },
+            {
+                id: "t2",
+                question: "إذا كانت f(x) = 2x + 1 و g(x) = x²، فأوجد (g ∘ f)(2)",
+                options: ["25", "10", "9", "5"],
+                correct: 0,
+                explanation: "f(2) = 2(2)+1 = 5. ثم g(5) = 5² = 25."
+            }
+        ]
+    }
+};
+
 window.MOCK_USERS = MOCK_USERS;
 window.ACADEMY_DATA = ACADEMY_DATA;
+window.STANDARDIZED_TESTS = STANDARDIZED_TESTS;

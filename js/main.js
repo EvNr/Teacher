@@ -169,9 +169,44 @@ function loadResources() {
     // Clear Container
     container.innerHTML = '';
 
+    // Render Standardized Tests (Qudrat & Tahsili)
+    const standardizedSection = document.createElement('div');
+    standardizedSection.className = 'section-block';
+    standardizedSection.innerHTML = '<h3>🎓 اختبارات القدرات والتحصيلي</h3><div class="card-grid"></div>';
+    const stdGrid = standardizedSection.querySelector('.card-grid');
+
+    if (typeof STANDARDIZED_TESTS !== 'undefined') {
+        Object.keys(STANDARDIZED_TESTS).forEach(key => {
+            const test = STANDARDIZED_TESTS[key];
+            const card = document.createElement('div');
+            card.className = 'resource-card fade-in';
+            // Only show Tahsili for Grade 11 & 12, Qudrat for everyone (or specifically 11/12 too, but let's show for all as practice)
+            // Or just show all for everyone as requested "mock tests"
+
+            card.innerHTML = `
+                <div class="resource-icon">⏱️</div>
+                <h4>${test.title}</h4>
+                <p>${test.description}</p>
+                <div class="xp-reward">مدة الاختبار: ${test.duration} دقيقة</div>
+                <button class="btn btn-primary btn-sm start-test-btn" data-test="${key}">بدء الاختبار التجريبي</button>
+            `;
+            stdGrid.appendChild(card);
+        });
+
+        // Bind Start Test Buttons
+        standardizedSection.querySelectorAll('.start-test-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const testKey = e.target.dataset.test;
+                const testData = STANDARDIZED_TESTS[testKey];
+                startStandardizedTest(testData);
+            });
+        });
+    }
+
     // Render Curriculum
     const curriculumSection = document.createElement('div');
     curriculumSection.className = 'section-block';
+    curriculumSection.style.marginTop = '3rem';
     curriculumSection.innerHTML = '<h3>📚 المنهج الدراسي</h3><div class="card-grid"></div>';
     const currGrid = curriculumSection.querySelector('.card-grid');
 
@@ -215,11 +250,12 @@ function loadResources() {
             const card = document.createElement('div');
             card.className = 'resource-card challenge-card fade-in';
 
-            // Check if solved (simple check for now)
-            const isSolved = false;
+            // Random time remaining for "Temporary" feel (1-24 hours)
+            const hoursLeft = Math.floor(Math.random() * 12) + 1;
 
             card.innerHTML = `
                 <div class="challenge-badge">${ch.difficulty}</div>
+                <div class="time-badge">⏳ متبقي ${hoursLeft} ساعة</div>
                 <h4>${ch.title}</h4>
                 <p class="challenge-desc">${ch.description}</p>
                 <div class="xp-reward">+${ch.xp} XP</div>
@@ -261,6 +297,7 @@ function loadResources() {
     // Replace the main grid
     container.classList.remove('resources-grid');
     container.innerHTML = ''; // Clear properly
+    container.appendChild(standardizedSection); // Add Standardized Tests first
     container.appendChild(curriculumSection);
     container.appendChild(challengeSection);
     container.appendChild(quizSection);
@@ -269,29 +306,76 @@ function loadResources() {
     initQuiz(data.quizzes, quizSection.querySelector('#quiz-content'));
 }
 
-function initQuiz(questions, container) {
+function startStandardizedTest(testData) {
+    // Replace the entire content with the test interface
+    const container = document.getElementById('app'); // Correct container selector
+    if(!container) return;
+
+    container.innerHTML = `
+        <div class="quiz-container fade-in" style="max-width: 800px; margin: 0 auto;">
+            <div class="quiz-header">
+                <h3>${testData.title}</h3>
+                <div class="timer-badge" id="test-timer">⏳ ${testData.duration}:00</div>
+            </div>
+            <div id="test-content"></div>
+        </div>
+    `;
+
+    initQuiz(testData.questions, container.querySelector('#test-content'), testData.duration * 60);
+}
+
+function initQuiz(questions, container, timeLimitSeconds = 0) {
     let current = 0;
     let score = 0;
+    let timerInterval;
+
+    // Timer Logic
+    if (timeLimitSeconds > 0) {
+        let timeLeft = timeLimitSeconds;
+        const timerDisplay = document.getElementById('test-timer');
+
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+            const s = (timeLeft % 60).toString().padStart(2, '0');
+
+            if (timerDisplay) timerDisplay.textContent = `⏳ ${m}:${s}`;
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                finishQuiz(true); // Force finish
+            }
+        }, 1000);
+    }
+
+    function finishQuiz(forced = false) {
+        if (timerInterval) clearInterval(timerInterval);
+
+        // Calculate XP (100 per correct answer, bonus 500 if mostly correct)
+        const earnedXP = score * 100;
+        if (earnedXP > 0) addXP(earnedXP);
+
+        container.innerHTML = `
+            <div class="quiz-result">
+                <h4>${forced ? '⏰ انتهى الوقت!' : '🎉 اكتمل الاختبار!'}</h4>
+                <p>النتيجة النهائية: ${score} / ${questions.length}</p>
+                <p style="color:#f39c12; font-weight:bold; margin:10px 0;">+${earnedXP} XP مكتسبة</p>
+                <button class="btn btn-primary" onclick="location.reload()">العودة للمصادر</button>
+            </div>
+        `;
+    }
 
     function renderQuestion() {
         if (current >= questions.length) {
-            // Calculate XP (100 per correct answer)
-            const earnedXP = score * 100;
-            if (earnedXP > 0) addXP(earnedXP);
-
-            container.innerHTML = `
-                <div class="quiz-result">
-                    <h4>🎉 اكتمل الاختبار!</h4>
-                    <p>النتيجة النهائية: ${score} / ${questions.length}</p>
-                    <p style="color:#f39c12; font-weight:bold; margin:10px 0;">+${earnedXP} XP مكتسبة</p>
-                    <button class="btn btn-primary" onclick="location.reload()">إعادة المحاولة</button>
-                </div>
-            `;
+            finishQuiz();
             return;
         }
 
         const q = questions[current];
         container.innerHTML = `
+            <div class="quiz-progress-bar" style="background:#eee; height:5px; width:100%; margin-bottom:1rem; border-radius:5px;">
+                <div style="background:var(--secondary-color); height:100%; width:${((current)/questions.length)*100}%; transition:width 0.3s;"></div>
+            </div>
             <h4 class="quiz-question">${q.question}</h4>
             <div class="options-grid">
                 ${q.options.map((opt, i) => `
@@ -320,7 +404,9 @@ function initQuiz(questions, container) {
                     feedback.innerHTML = `✅ <strong>إجابة صحيحة!</strong> <br> ${q.explanation}`;
                     feedback.className = 'feedback correct fade-in';
                     score++;
-                    document.getElementById('quiz-score').textContent = `النقاط: ${score}`;
+                    // Update score display if exists (only in normal quiz mode)
+                    const scoreDisplay = document.getElementById('quiz-score');
+                    if (scoreDisplay) scoreDisplay.textContent = `النقاط: ${score}`;
                 } else {
                     btn.classList.add('wrong');
                     opts[q.correct].classList.add('correct'); // Show correct one
@@ -334,7 +420,9 @@ function initQuiz(questions, container) {
 
         nextBtn.addEventListener('click', () => {
             current++;
-            document.getElementById('quiz-progress').textContent = `السؤال ${Math.min(current + 1, questions.length)} / ${questions.length}`;
+            // Update simple progress text if exists
+            const progressDisplay = document.getElementById('quiz-progress');
+            if (progressDisplay) progressDisplay.textContent = `السؤال ${Math.min(current + 1, questions.length)} / ${questions.length}`;
             renderQuestion();
         });
     }
