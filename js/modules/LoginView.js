@@ -10,6 +10,10 @@ export class LoginView {
         this.container = container;
         this.state = 'IDENTIFY'; // IDENTIFY -> SETUP_SECRET -> VERIFY_SECRET
         this.tempUser = null;
+        // Secret Trigger Logic
+        this.secretClicks = 0;
+        this.secretTimer = null;
+
         this.render();
     }
 
@@ -17,7 +21,7 @@ export class LoginView {
         this.container.innerHTML = `
             <div class="login-wrapper">
                 <div class="moe-card" style="width: 100%; max-width: 450px; text-align: center;">
-                    <div style="margin-bottom: 2rem; display:flex; justify-content:center;">
+                    <div id="brandLogo" style="margin-bottom: 2rem; display:flex; justify-content:center; cursor:pointer; user-select:none;">
                         ${BRAND.logoSvg.replace('width="50"', 'width="100"').replace('height="50"', 'height="100"')}
                     </div>
 
@@ -68,13 +72,12 @@ export class LoginView {
                         </select>
                     </div>
                 </div>
-                <!-- Teacher Login Toggle Link -->
-                <div style="text-align:right; margin-bottom:1rem;">
-                    <a href="#" id="teacherLoginToggle" style="color:var(--moe-gold); font-size:0.8rem;">تسجيل دخول المعلمة؟</a>
-                </div>
             `;
         } else if (this.state === 'TEACHER') {
             return `
+                 <div style="background:#fff3cd; color:#856404; padding:5px; border-radius:4px; margin-bottom:10px; font-size:0.8rem; font-weight:bold;">
+                    ⚠️ دخول خاص بالمعلمات
+                 </div>
                  <div class="input-group">
                     <label>البريد الإلكتروني</label>
                     <input type="email" id="email" required placeholder="sabreen@academy.com" dir="ltr">
@@ -124,13 +127,27 @@ export class LoginView {
         const form = document.getElementById('loginForm');
         const log = document.getElementById('security-log');
 
-        // Toggle Teacher Login
-        const teacherToggle = document.getElementById('teacherLoginToggle');
-        if (teacherToggle) {
-            teacherToggle.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.state = 'TEACHER';
-                this.render();
+        // Secret Trigger: Logo Click
+        const logo = document.getElementById('brandLogo');
+        if (logo) {
+            logo.addEventListener('click', () => {
+                this.secretClicks++;
+
+                // Visual Feedback
+                logo.style.transform = `scale(${1 + (this.secretClicks * 0.05)})`;
+                setTimeout(() => logo.style.transform = 'scale(1)', 100);
+
+                if (this.secretClicks >= 5) {
+                    this.state = 'TEACHER';
+                    this.secretClicks = 0;
+                    this.render();
+                }
+
+                // Reset timer if idle
+                clearTimeout(this.secretTimer);
+                this.secretTimer = setTimeout(() => {
+                    this.secretClicks = 0;
+                }, 3000);
             });
         }
 
