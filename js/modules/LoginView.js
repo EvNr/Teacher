@@ -8,9 +8,8 @@ import { BRAND } from '../core/Brand.js';
 export class LoginView {
     constructor(container) {
         this.container = container;
-        this.state = 'IDENTIFY'; // IDENTIFY -> REGISTER_2FA -> VERIFY_OTP
+        this.state = 'IDENTIFY'; // IDENTIFY -> SETUP_SECRET -> VERIFY_SECRET
         this.tempUser = null;
-        this.generatedOTP = null;
         this.render();
     }
 
@@ -85,26 +84,30 @@ export class LoginView {
                     <input type="password" id="password" required>
                 </div>
             `;
-        } else if (this.state === 'REGISTER_2FA') {
+        } else if (this.state === 'SETUP_SECRET') {
             return `
                 <div style="background:#e8f5e9; color:#2e7d32; padding:10px; border-radius:4px; margin-bottom:15px; font-size:0.9rem;">
                     <strong>مرحباً ${this.tempUser.name}!</strong><br>
-                    هذا هو دخولك الأول. لحماية حسابك، يرجى ربط وسيلة تواصل لاستلام رمز التحقق مستقبلاً.
+                    هذا هو دخولك الأول. لحماية حسابك، يرجى تعيين سؤال أمان سري لا يعرف إجابته غيرك.
                 </div>
                 <div class="input-group">
-                    <label>البريد الإلكتروني أو رقم الجوال</label>
-                    <input type="text" id="contactInfo" required placeholder="example@gmail.com" dir="ltr">
+                    <label>سؤال سري (مثال: ما هو اسم جدتك؟)</label>
+                    <input type="text" id="secretQuestion" required placeholder="اكتبي سؤالاً تعرفين إجابته..." autocomplete="off">
+                </div>
+                <div class="input-group">
+                    <label>الإجابة السرية</label>
+                    <input type="text" id="secretAnswer" required placeholder="اكتبي الإجابة هنا..." autocomplete="off">
                 </div>
             `;
-        } else if (this.state === 'VERIFY_OTP') {
+        } else if (this.state === 'VERIFY_SECRET') {
             const authData = Auth.getAuthStatus(this.tempUser.id);
             return `
                 <div style="background:#fff3cd; color:#856404; padding:10px; border-radius:4px; margin-bottom:15px; font-size:0.9rem;">
-                    تم إرسال رمز التحقق إلى: <strong>${authData.contactValue}</strong>
+                    <strong>سؤال الأمان:</strong> ${authData.secretQuestion}
                 </div>
                 <div class="input-group">
-                    <label>رمز التحقق (6 أرقام)</label>
-                    <input type="text" id="otpCode" required placeholder="XXXXXX" maxlength="6" style="text-align:center; letter-spacing:5px; font-size:1.2rem;">
+                    <label>إجابتك السرية</label>
+                    <input type="text" id="secretAnswerInput" required placeholder="أدخلي الإجابة..." autocomplete="off">
                 </div>
             `;
         }
@@ -113,8 +116,8 @@ export class LoginView {
     getButtonText() {
         if (this.state === 'IDENTIFY') return 'متابعة';
         if (this.state === 'TEACHER') return 'دخول';
-        if (this.state === 'REGISTER_2FA') return 'ربط الحساب وإرسال الرمز';
-        if (this.state === 'VERIFY_OTP') return 'تحقق ودخول';
+        if (this.state === 'SETUP_SECRET') return 'حفظ ومتابعة';
+        if (this.state === 'VERIFY_SECRET') return 'تحقق ودخول';
     }
 
     attachEvents() {
@@ -190,39 +193,40 @@ export class LoginView {
                         const authData = Auth.getAuthStatus(student.id);
 
                         if (authData) {
-                            // Already registered -> Go to OTP
-                            this.state = 'VERIFY_OTP';
-                            this.triggerOTP(authData.contactValue);
+                            // Already registered -> Verify Secret
+                            this.state = 'VERIFY_SECRET';
                         } else {
-                            // First time -> Go to Register
-                            this.state = 'REGISTER_2FA';
+                            // First time -> Setup Secret
+                            this.state = 'SETUP_SECRET';
                         }
                         this.render();
                     } else {
                         throw new Error("لم يتم العثور على الطالبة في الكشف.");
                     }
 
-                } else if (this.state === 'REGISTER_2FA') {
-                    // Step 2: Bind Contact
-                    const contact = document.getElementById('contactInfo').value.trim();
-                    if (contact.length < 5) throw new Error("يرجى إدخال بريد أو رقم صحيح");
+                } else if (this.state === 'SETUP_SECRET') {
+                    // Step 2: Bind Secret
+                    const q = document.getElementById('secretQuestion').value.trim();
+                    const a = document.getElementById('secretAnswer').value.trim();
 
-                    log.textContent = "> جاري ربط الحساب...";
+                    if (q.length < 3 || a.length < 2) throw new Error("يرجى إدخال سؤال وإجابة صحيحة");
+
+                    log.textContent = "> جاري حفظ البيانات الآمنة...";
                     await new Promise(r => setTimeout(r, 800));
 
-                    Auth.bindContact(this.tempUser.id, 'email', contact);
+                    Auth.bindSecret(this.tempUser.id, q, a);
 
-                    this.state = 'VERIFY_OTP';
-                    this.triggerOTP(contact);
-                    this.render();
+                    // Auto-login after setup
+                    appStore.setUser(this.tempUser);
+                    setTimeout(() => Router.navigate('home'), 500);
 
-                } else if (this.state === 'VERIFY_OTP') {
-                    // Step 3: Verify Code
-                    const code = document.getElementById('otpCode').value.trim();
-                    log.textContent = "> جاري التحقق من الرمز...";
+                } else if (this.state === 'VERIFY_SECRET') {
+                    // Step 3: Verify Answer
+                    const answer = document.getElementById('secretAnswerInput').value.trim();
+                    log.textContent = "> جاري التحقق من الهوية...";
                     await new Promise(r => setTimeout(r, 600));
 
-                    if (code === this.generatedOTP) {
+                    if (Auth.verifySecret(this.tempUser.id, answer)) {
                         log.style.color = 'var(--moe-green)';
                         log.textContent = "> تم التحقق بنجاح.";
 
@@ -243,8 +247,4 @@ export class LoginView {
         });
     }
 
-    triggerOTP(contact) {
-        this.generatedOTP = Auth.generateOTP();
-        Auth.sendMockOTP(contact, this.generatedOTP);
-    }
 }

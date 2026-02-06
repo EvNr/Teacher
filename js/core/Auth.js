@@ -139,18 +139,28 @@ export class Auth {
     }
 
     /**
-     * Binds a contact method to the student ID.
+     * Binds a Secret Question/Answer to the student ID.
      */
-    static bindContact(studentId, contactType, contactValue) {
+    static bindSecret(studentId, question, answer) {
         DATA_STORE.AUTH_DB[studentId] = {
-            contactType: contactType,
-            contactValue: contactValue,
+            secretQuestion: question,
+            secretAnswer: this.normalizeArabic(answer), // Normalize for consistency
             registeredAt: new Date().toISOString(),
             xp: 0
         };
-        // Persist to localStorage for demo persistence across reloads
         localStorage.setItem('AUTH_DB', JSON.stringify(DATA_STORE.AUTH_DB));
         return true;
+    }
+
+    /**
+     * Verifies the provided answer against the stored secret.
+     */
+    static verifySecret(studentId, inputAnswer) {
+        const record = DATA_STORE.AUTH_DB[studentId];
+        if (!record) return false;
+
+        // Normalize input and stored answer for comparison
+        return this.normalizeArabic(inputAnswer) === record.secretAnswer;
     }
 
     // --- XP Persistence Logic ---
@@ -179,41 +189,8 @@ export class Auth {
         return DATA_STORE.AUTH_DB[studentId].xp;
     }
 
-    // --- 2FA OTP Logic ---
-
-    /**
-     * Generates a crypto-random 6 digit code.
-     */
-    static generateOTP() {
-        const array = new Uint8Array(4);
-        window.crypto.getRandomValues(array);
-        const num = new DataView(array.buffer).getUint32(0);
-        return (num % 1000000).toString().padStart(6, '0');
-    }
-
-    /**
-     * Simulates sending the OTP via Email/SMS.
-     * In this prototype, it shows a Toast/Alert with the code.
-     */
-    static sendMockOTP(contactValue, otpCode) {
-        console.log(`[SECURE SENDER] Sending OTP ${otpCode} to ${contactValue}`);
-
-        // Create a Mock Notification in UI
-        const notification = document.createElement('div');
-        notification.style.cssText = `
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            background: #333; color: #fff; padding: 15px 25px; border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 99999; font-family: sans-serif;
-            border-left: 5px solid #2ecc71; text-align: center; direction: ltr;
-        `;
-        notification.innerHTML = `
-            <strong>New Message</strong><br>
-            Your Sabreen Academy Code is: <span style="font-size:1.2em; color:#2ecc71; font-weight:bold;">${otpCode}</span>
-        `;
-        document.body.appendChild(notification);
-
-        setTimeout(() => notification.remove(), 8000); // 8 seconds to read
-    }
+    // --- 2FA OTP Logic (Deprecated for Secret Q/A) ---
+    // Kept for reference or future hybrid use if needed.
 
     // Load persisted DB on init
     static initAuthDB() {
