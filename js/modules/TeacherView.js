@@ -16,7 +16,6 @@ export class TeacherView {
 
     handleSync(key) {
         if (key === this.chat.storageKey || key === this.chat.privateKey) this.updateChatUI();
-        // Teacher doesn't receive notifications from herself usually, but good to verify
     }
 
     render() {
@@ -24,148 +23,143 @@ export class TeacherView {
         const stats11B = DATA_STORE.ANALYTICS["11"].B;
 
         this.container.innerHTML = `
-            <nav style="background:var(--moe-dark); color:white; padding:1rem 2rem; display:flex; justify-content:space-between; align-items:center;">
-                <div style="font-weight:bold; display:flex; align-items:center; gap:10px;">
-                    ${BRAND.logoSvg.replace('width="50"', 'width="30"').replace('height="50"', 'height="30"').replace(/var\(--moe-green\)/g, 'white').replace(/var\(--moe-gold\)/g, '#f0a500')}
-                    أكاديمية صابرين - مركز التحكم
+            <nav class="expert-nav">
+                <div style="font-weight:bold; font-size:1.2rem; color:var(--gilded-gold); display:flex; align-items:center; gap:10px;">
+                    <svg width="30" height="30" viewBox="0 0 100 100">
+                           <circle cx="50" cy="50" r="45" stroke="#c5a059" stroke-width="5" fill="none" />
+                           <text x="50" y="65" font-family="Tajawal" font-size="50" text-anchor="middle" fill="#c5a059" font-weight="bold">ص</text>
+                    </svg>
+                    مركز القيادة
                 </div>
                 <div style="display:flex; align-items:center; gap:20px;">
-                    <!-- Notification Center (Read Only for Teacher) -->
-                    <div class="notif-container" id="notifBtn">
-                        <div class="notif-icon">🔔</div>
-                    </div>
-                    <div>
-                        أ. صابرين | <button id="logoutBtn" style="background:none; border:none; color:#f0a500; cursor:pointer; font-weight:bold;">خروج</button>
-                    </div>
+                    <div class="text-white">أ. صابرين</div>
+                    <button id="logoutBtn" class="btn-outline-gold" style="padding:5px 15px; font-size:0.8rem;">خروج</button>
                 </div>
             </nav>
 
-            <main style="padding:2rem; max-width:1400px; margin:0 auto;">
+            <main class="dashboard-grid fade-in">
 
-                <div style="display:grid; grid-template-columns: 3fr 1fr; gap:2rem;">
+                <div style="display:flex; flex-direction:column; gap:2rem;">
 
-                    <!-- Analytics Panel -->
-                    <div style="display:flex; flex-direction:column; gap:2rem;">
+                    <div class="expert-card">
+                        <h3 class="text-gold font-heading" style="margin-bottom:2rem;">تحليل الأداء الأكاديمي</h3>
+                        <div style="height:300px; position:relative; background:rgba(0,0,0,0.2); border-radius:12px; padding:20px; display:flex; justify-content:space-around; align-items:flex-end;">
 
-                        <!-- Section Comparison Chart -->
-                        <div class="moe-card">
-                            <h3>📊 تحليل أداء الشعب الدراسية</h3>
-                            <div style="margin-top:2rem; height:300px; position:relative; border-left:1px solid #ccc; border-bottom:1px solid #ccc; padding:20px;">
-                                <div style="position:absolute; left:-30px; top:0;">100</div>
-                                <div style="position:absolute; left:-30px; bottom:0;">0</div>
-
-                                <div style="position:absolute; bottom:0; left:20%; width:15%; height:${stats11A.avg}%; background:var(--moe-green); transition:height 1s; display:flex; align-items:flex-end; justify-content:center; color:white; font-weight:bold; border-radius:4px 4px 0 0;">
-                                    ${stats11A.avg}%
+                            <div style="width:15%; text-align:center;">
+                                <div style="height:${stats11A.avg}%; background:var(--gilded-gold); border-radius:8px 8px 0 0; position:relative; animation:slideUp 1s;">
+                                    <span style="position:absolute; top:-25px; left:0; right:0; color:white; font-weight:bold;">${stats11A.avg}%</span>
                                 </div>
-                                <div style="position:absolute; bottom:-30px; left:20%; width:15%; text-align:center;">11-A</div>
-
-                                <div style="position:absolute; bottom:0; left:60%; width:15%; height:${stats11B.avg}%; background:var(--moe-gold); transition:height 1s; display:flex; align-items:flex-end; justify-content:center; color:white; font-weight:bold; border-radius:4px 4px 0 0;">
-                                    ${stats11B.avg}%
-                                </div>
-                                <div style="position:absolute; bottom:-30px; left:60%; width:15%; text-align:center;">11-B</div>
+                                <div style="margin-top:10px; color:var(--luxury-grey);">11-A</div>
                             </div>
-                        </div>
 
-                        <!-- Student List Table -->
-                        <div class="moe-card">
-                            <h3>📋 متابعة الطالبات</h3>
-                            <table style="width:100%; border-collapse:collapse; margin-top:1rem;">
-                                <thead>
-                                    <tr style="background:#f5f5f5; color:var(--moe-dark);">
-                                        <th style="padding:10px; text-align:right;">الاسم</th>
-                                        <th style="padding:10px; text-align:right;">الصف/الشعبة</th>
-                                        <th style="padding:10px; text-align:center;">النقاط (XP)</th>
-                                        <th style="padding:10px; text-align:center;">الحالة</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${this.getAllStudents().map(u => `
-                                        <tr style="border-bottom:1px solid #eee;">
-                                            <td style="padding:10px;">${u.name}</td>
-                                            <td style="padding:10px;">${u.grade} - ${u.section}</td>
-                                            <td style="padding:10px; text-align:center; font-weight:bold; color:var(--moe-gold);">${u.xp || 0}</td>
-                                            <td style="padding:10px; text-align:center;">
-                                                <span class="security-badge" style="background:${u.registered ? '#e8f5e9' : '#fff3cd'}; color:${u.registered ? '#2e7d32' : '#856404'}; border:none;">
-                                                    ${u.registered ? 'مسجل' : 'غير مسجل'}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
+                            <div style="width:15%; text-align:center;">
+                                <div style="height:${stats11B.avg}%; background:var(--gilded-dark); border-radius:8px 8px 0 0; position:relative; animation:slideUp 1.2s;">
+                                     <span style="position:absolute; top:-25px; left:0; right:0; color:white; font-weight:bold;">${stats11B.avg}%</span>
+                                </div>
+                                <div style="margin-top:10px; color:var(--luxury-grey);">11-B</div>
+                            </div>
 
+                        </div>
                     </div>
 
-                    <!-- Side Panel -->
-                    <div style="display:flex; flex-direction:column; gap:2rem;">
-
-                         <!-- Global Alert System -->
-                         <div class="moe-card" style="background:linear-gradient(135deg, #d32f2f, #b71c1c); color:white;">
-                            <h3 style="color:white; border-bottom-color:rgba(255,255,255,0.2);">🚨 إرسال تنبيه عاجل</h3>
-                            <form id="alertForm" style="margin-top:1rem;">
-                                <input type="text" id="alertTitle" placeholder="عنوان التنبيه" style="width:100%; margin-bottom:10px; padding:8px; border-radius:4px; border:none;">
-                                <textarea id="alertMessage" placeholder="نص التنبيه (سيظهر كإشعار فوري للجميع)..." style="width:100%; height:60px; margin-bottom:10px; padding:8px; border-radius:4px; border:none;"></textarea>
-                                <button type="submit" class="btn-moe" style="background:white; color:#b71c1c; border:none; padding:5px 15px; width:100%;">إرسال للجميع</button>
-                            </form>
-                         </div>
-
-                         <!-- MOTD Manager -->
-                         <div class="moe-card" style="background:linear-gradient(135deg, var(--moe-dark), var(--moe-green)); color:white;">
-                            <h3 style="color:white; border-bottom-color:rgba(255,255,255,0.2);">📢 رسالة اليوم (MOTD)</h3>
-                            <form id="motdForm" style="margin-top:1rem;">
-                                <input type="text" id="motdTitle" placeholder="العنوان" style="width:100%; margin-bottom:10px; padding:8px; border-radius:4px; border:none;">
-                                <textarea id="motdMessage" placeholder="نص الرسالة..." style="width:100%; height:60px; margin-bottom:10px; padding:8px; border-radius:4px; border:none;"></textarea>
-                                <div style="display:flex; justify-content:space-between; align-items:center;">
-                                    <label style="font-size:0.9rem; cursor:pointer;">
-                                        <input type="checkbox" id="motdActive" checked> تفعيل
-                                    </label>
-                                    <button type="submit" class="btn-moe" style="background:white; color:var(--moe-dark); border:none; padding:5px 15px;">تحديث</button>
-                                </div>
-                            </form>
-                         </div>
-
-                         <div class="moe-card">
-                             <h3>📥 التقارير والإحصاءات</h3>
-                             <button class="btn-outline" style="width:100%; margin-bottom:10px;">تصدير كشف الدرجات (PDF)</button>
-                             <button class="btn-outline" style="width:100%;">تحليل النتائج (Excel)</button>
-                         </div>
+                    <div class="expert-card">
+                        <h3 class="text-white font-heading" style="margin-bottom:1rem;">سجل الطالبات</h3>
+                        <table style="width:100%; border-collapse:collapse; color:var(--luxury-grey);">
+                            <thead>
+                                <tr style="border-bottom:1px solid rgba(255,255,255,0.1); color:var(--gilded-gold);">
+                                    <th style="padding:15px; text-align:right;">الاسم</th>
+                                    <th style="padding:15px; text-align:right;">الصف</th>
+                                    <th style="padding:15px; text-align:center;">XP</th>
+                                    <th style="padding:15px; text-align:center;">الحالة</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${this.getAllStudents().slice(0, 10).map(u => `
+                                    <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                                        <td style="padding:15px; color:white;">${u.name}</td>
+                                        <td style="padding:15px;">${u.grade}-${u.section}</td>
+                                        <td style="padding:15px; text-align:center; color:var(--gilded-light); font-weight:bold;">${u.xp || 0}</td>
+                                        <td style="padding:15px; text-align:center;">
+                                            <span style="padding:3px 8px; border-radius:4px; background:${u.registered ? 'rgba(47, 133, 90, 0.2)' : 'rgba(197, 160, 89, 0.2)'}; color:${u.registered ? 'var(--success-emerald)' : 'var(--gilded-gold)'};">
+                                                ${u.registered ? 'مسجل' : 'معلق'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                        <div style="text-align:center; margin-top:15px; color:var(--luxury-grey);">... عرض المزيد</div>
                     </div>
 
                 </div>
 
-                <!-- Chat Widget (Enhanced) -->
+                <div style="display:flex; flex-direction:column; gap:2rem;">
+
+                     <div class="expert-card" style="border:1px solid var(--danger-ruby);">
+                        <h3 class="text-white font-heading" style="color:var(--danger-ruby);">إرسال تنبيه عاجل</h3>
+                        <form id="alertForm" style="margin-top:1rem;">
+                            <div class="expert-input-group">
+                                <input type="text" id="alertTitle" class="expert-input" placeholder="العنوان" style="border-color:var(--danger-ruby);">
+                            </div>
+                            <div class="expert-input-group">
+                                <textarea id="alertMessage" class="expert-input" placeholder="النص..." style="height:80px; border-color:var(--danger-ruby);"></textarea>
+                            </div>
+                            <button type="submit" class="btn-gold" style="width:100%; background:var(--danger-ruby); border:none; box-shadow:none;">إرسال للجميع</button>
+                        </form>
+                     </div>
+
+                     <div class="expert-card">
+                        <h3 class="text-gold font-heading">رسالة اليوم (MOTD)</h3>
+                        <form id="motdForm" style="margin-top:1rem;">
+                            <div class="expert-input-group">
+                                <input type="text" id="motdTitle" class="expert-input" placeholder="العنوان">
+                            </div>
+                            <div class="expert-input-group">
+                                <textarea id="motdMessage" class="expert-input" placeholder="النص..." style="height:80px;"></textarea>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <label style="cursor:pointer; color:white;">
+                                    <input type="checkbox" id="motdActive"> تفعيل
+                                </label>
+                                <button type="submit" class="btn-outline-gold">تحديث</button>
+                            </div>
+                        </form>
+                     </div>
+
+                </div>
+
+                <!-- Chat Widget -->
                 <div class="chat-widget">
-                    <div class="chat-window" id="chatWindow">
-                        <div class="chat-header" id="chatHeader">
-                            <span id="chatTitle">💬 غرفة المعلمة</span>
+                    <div class="chat-interface" id="chatWindow">
+                        <div class="chat-header-lux" id="chatHeader">
+                            <span class="text-gold font-heading" id="chatTitle">الغرفة العامة</span>
                             <div style="display:flex; gap:10px;">
-                                <span style="font-size:0.8rem; cursor:pointer; display:none;" id="backToChatList">⬅️ عودة</span>
-                                <span style="font-size:0.8rem; cursor:pointer;" id="closeChat">✖</span>
+                                <span class="text-grey" style="cursor:pointer; display:none;" id="backToChatList">عودة</span>
+                                <span class="text-grey" style="cursor:pointer;" id="closeChat">✖</span>
                             </div>
                         </div>
 
-                         <!-- Tabs -->
-                        <div style="display:flex; background:#f1f1f1; border-bottom:1px solid #ddd;">
-                            <button class="tab-btn active" id="tabGlobal" style="flex:1; border:none; padding:10px; cursor:pointer;">العام</button>
-                            <button class="tab-btn" id="tabPrivate" style="flex:1; border:none; padding:10px; cursor:pointer;">الخاص</button>
+                        <div class="chat-tabs">
+                            <div class="chat-tab active" id="tabGlobal">عام</div>
+                            <div class="chat-tab" id="tabPrivate">خاص</div>
                         </div>
 
-                        <div class="chat-body" id="chatBody"></div>
+                        <div class="chat-area" id="chatBody"></div>
 
-                        <form class="chat-footer" id="chatForm">
-                            <input type="text" class="chat-input" placeholder="رد على الطالبات..." required>
-                            <button type="submit" class="btn-moe" style="border-radius:50%; width:40px; height:40px; padding:0;">➤</button>
+                        <form class="chat-controls" id="chatForm">
+                            <input type="text" class="expert-input" placeholder="رد على الطالبات..." required style="padding:10px;">
+                            <button type="submit" class="btn-gold" style="border-radius:50%; width:45px; height:45px; padding:0; display:flex; align-items:center; justify-content:center;">➤</button>
                         </form>
 
-                         <!-- Search Modal (Hidden inside widget) -->
-                        <div id="searchView" style="display:none; position:absolute; inset:50px 0 0 0; background:white; z-index:10; flex-direction:column; padding:15px;">
-                             <input type="text" id="searchUser" placeholder="ابحث عن طالبة..." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; margin-bottom:10px;">
+                        <!-- Search Overlay -->
+                        <div id="searchView" style="display:none; position:absolute; inset:0; background:var(--royal-obsidian); z-index:10; flex-direction:column; padding:20px;">
+                             <h4 class="text-gold" style="margin-bottom:15px;">بحث عن طالبة</h4>
+                             <input type="text" id="searchUser" class="expert-input" placeholder="الاسم..." style="margin-bottom:15px;">
                              <div id="searchResults" style="flex:1; overflow-y:auto;"></div>
-                             <button id="closeSearch" style="margin-top:10px; padding:5px; background:#eee; border:none; cursor:pointer;">إلغاء</button>
+                             <button id="closeSearch" class="btn-outline-gold" style="margin-top:10px;">إغلاق</button>
                         </div>
                     </div>
-                    <div class="chat-toggle-btn" id="toggleChat">💬</div>
+                    <div class="chat-toggle" id="toggleChat">💬</div>
                 </div>
 
             </main>
@@ -183,7 +177,7 @@ export class TeacherView {
         if (this.chatState.mode === 'GLOBAL') {
             const messages = this.chat.getMessages();
             footer.style.display = 'flex';
-            body.innerHTML = this.renderMessages(messages, true); // True = Allow Delete
+            body.innerHTML = this.renderMessages(messages, true);
         }
         else if (this.chatState.mode === 'PRIVATE_LIST') {
             const chats = this.chat.getPrivateChats();
@@ -191,15 +185,15 @@ export class TeacherView {
 
             footer.style.display = 'none';
             body.innerHTML = `
-                <button id="startNewChat" style="width:100%; padding:10px; background:var(--moe-gold); color:white; border:none; border-radius:4px; margin-bottom:10px;">+ محادثة جديدة</button>
-                <div style="display:flex; flex-direction:column; gap:5px;">
+                <button id="startNewChat" class="btn-gold" style="width:100%; margin-bottom:15px; border-radius:10px;">+ محادثة جديدة</button>
+                <div style="display:flex; flex-direction:column; gap:10px;">
                     ${myChats.map(id => {
                         const otherName = chats[id].participants.find(p => p !== this.user.name);
                         const lastMsg = chats[id].messages[chats[id].messages.length - 1];
                         return `
-                            <div class="private-chat-item" data-id="${id}" style="padding:10px; background:white; border:1px solid #eee; border-radius:8px; cursor:pointer;">
-                                <div style="font-weight:bold;">${otherName}</div>
-                                <div style="font-size:0.8rem; color:#666; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">${lastMsg ? lastMsg.text : '...'}</div>
+                            <div class="private-chat-item" data-id="${id}" style="padding:15px; background:rgba(255,255,255,0.05); border-radius:12px; cursor:pointer;">
+                                <div class="text-gold" style="font-weight:bold;">${otherName}</div>
+                                <div class="text-grey" style="font-size:0.8rem; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">${lastMsg ? lastMsg.text : '...'}</div>
                             </div>
                         `;
                     }).join('')}
@@ -225,7 +219,6 @@ export class TeacherView {
                 const otherName = chat.participants.find(p => p !== this.user.name);
                 document.getElementById('chatTitle').textContent = otherName;
                 document.getElementById('backToChatList').style.display = 'block';
-
                 footer.style.display = 'flex';
                 body.innerHTML = this.renderMessages(chat.messages, false);
             }
@@ -237,11 +230,11 @@ export class TeacherView {
     renderMessages(messages, allowDelete) {
          return messages.map(msg => {
             const isMe = msg.sender === this.user.name;
-            const cls = isMe ? 'me' : (msg.role === 'teacher' ? 'teacher' : 'student');
+            const type = isMe ? 'outgoing' : 'incoming';
             return `
-                <div class="chat-msg ${cls}" style="position:relative; padding-right:${allowDelete ? '25px' : '15px'};">
-                    ${allowDelete ? `<span class="delete-msg" data-id="${msg.id}" style="position:absolute; top:5px; right:5px; color:red; cursor:pointer; font-weight:bold; font-size:12px;">✖</span>` : ''}
-                    <span class="msg-meta">${msg.sender} • ${msg.time}</span>
+                <div class="msg-bubble ${type}" style="position:relative; padding-right:${allowDelete ? '30px' : '18px'};">
+                    ${allowDelete ? `<span class="delete-msg" data-id="${msg.id}" style="position:absolute; top:5px; right:8px; color:var(--danger-ruby); cursor:pointer; font-weight:bold; font-size:14px;">✖</span>` : ''}
+                    <div style="font-size:0.7rem; opacity:0.7; margin-bottom:5px;">${msg.sender}</div>
                     ${msg.text}
                 </div>
             `;
@@ -256,7 +249,6 @@ export class TeacherView {
             const gradeData = roster[grade];
 
             if (Array.isArray(gradeData)) {
-                // Grade 10 Logic (Flat Array)
                 gradeData.forEach(name => {
                     const id = `${grade}_General_${name.replace(/\s+/g, '_')}`;
                     const authData = DATA_STORE.AUTH_DB[id] || {};
@@ -269,7 +261,6 @@ export class TeacherView {
                     });
                 });
             } else {
-                // Grade 11/12 Logic (Sections)
                 Object.keys(gradeData).forEach(section => {
                     gradeData[section].forEach(name => {
                         const id = `${grade}_${section}_${name.replace(/\s+/g, '_')}`;
@@ -302,69 +293,58 @@ export class TeacherView {
             document.getElementById('motdActive').checked = currentMotd.active;
         }
 
-        // Save MOTD
         document.getElementById('motdForm').addEventListener('submit', (e) => {
             e.preventDefault();
-            const title = document.getElementById('motdTitle').value;
-            const message = document.getElementById('motdMessage').value;
-            const active = document.getElementById('motdActive').checked;
-
-            this.chat.setMOTD(title, message, active);
-            alert('تم تحديث رسالة اليوم بنجاح!');
-
-            // Clear "seen" status so everyone sees the new message
+            this.chat.setMOTD(
+                document.getElementById('motdTitle').value,
+                document.getElementById('motdMessage').value,
+                document.getElementById('motdActive').checked
+            );
+            alert('تم التحديث.');
             sessionStorage.removeItem('motd_seen');
         });
 
-        // Alert Form
         document.getElementById('alertForm').addEventListener('submit', (e) => {
             e.preventDefault();
             const title = document.getElementById('alertTitle').value;
             const message = document.getElementById('alertMessage').value;
-
             if(title && message) {
-                this.chat.sendNotification('ALL', {
-                    type: 'alert',
-                    title: title,
-                    text: message
-                });
-                alert('تم إرسال التنبيه لجميع الطالبات!');
+                this.chat.sendNotification('ALL', { type: 'alert', title, text: message });
+                alert('تم الإرسال.');
                 document.getElementById('alertForm').reset();
             }
         });
 
-        // Chat Events (Updated with Tabs/Search)
         const win = document.getElementById('chatWindow');
         const toggle = document.getElementById('toggleChat');
-        toggle.addEventListener('click', () => win.classList.add('open'));
-        document.getElementById('closeChat').addEventListener('click', () => win.classList.remove('open'));
+        toggle.addEventListener('click', () => win.classList.add('active'));
+        document.getElementById('closeChat').addEventListener('click', () => win.classList.remove('active'));
 
-        // Tabs
         const tabGlobal = document.getElementById('tabGlobal');
         const tabPrivate = document.getElementById('tabPrivate');
 
         tabGlobal.addEventListener('click', () => {
             this.chatState.mode = 'GLOBAL';
-            this.updateTabStyles(true);
+            tabGlobal.classList.add('active'); tabPrivate.classList.remove('active');
             this.updateChatUI();
         });
 
         tabPrivate.addEventListener('click', () => {
             this.chatState.mode = 'PRIVATE_LIST';
-            this.updateTabStyles(false);
+            tabPrivate.classList.add('active'); tabGlobal.classList.remove('active');
             this.updateChatUI();
         });
 
         document.getElementById('backToChatList').addEventListener('click', () => {
             this.chatState.mode = 'PRIVATE_LIST';
-            document.getElementById('chatTitle').textContent = '💬 غرفة المعلمة';
+            document.getElementById('chatTitle').textContent = 'الغرفة العامة';
             document.getElementById('backToChatList').style.display = 'none';
             this.updateChatUI();
         });
 
-        // Search
         const searchInput = document.getElementById('searchUser');
         const searchResults = document.getElementById('searchResults');
+
         searchInput.addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase();
             if (val.length < 2) { searchResults.innerHTML = ''; return; }
@@ -381,7 +361,7 @@ export class TeacherView {
             Object.values(roster["12"]).forEach(scan);
 
             searchResults.innerHTML = matches.map(name => `
-                <div class="search-item" style="padding:10px; border-bottom:1px solid #eee; cursor:pointer;">${name}</div>
+                <div class="search-item text-white" style="padding:15px; border-bottom:1px solid rgba(255,255,255,0.1); cursor:pointer;">${name}</div>
             `).join('');
 
             searchResults.querySelectorAll('.search-item').forEach(item => {
@@ -393,11 +373,11 @@ export class TeacherView {
                 });
             });
         });
+
         document.getElementById('closeSearch').addEventListener('click', () => {
             document.getElementById('searchView').style.display = 'none';
         });
 
-        // Send Message
         document.getElementById('chatForm').addEventListener('submit', (e) => {
             e.preventDefault();
             const input = e.target.querySelector('input');
@@ -416,11 +396,10 @@ export class TeacherView {
             }
         });
 
-        // Delete Message Event Delegation
         document.getElementById('chatBody').addEventListener('click', (e) => {
             if (e.target.classList.contains('delete-msg')) {
                 const id = parseInt(e.target.dataset.id);
-                if (confirm('هل أنت متأكد من حذف هذه الرسالة؟')) {
+                if (confirm('هل تريد الحذف؟')) {
                     this.chat.deleteMessage(id);
                 }
             }
@@ -428,26 +407,11 @@ export class TeacherView {
     }
 
     startPrivateChat(targetName) {
-        // Ensure chat exists
         this.chat.initPrivateChat(this.user, targetName);
-
         const participants = [this.user.name, targetName].sort();
         const chatId = participants.join('_');
         this.chatState.activePrivateId = chatId;
         this.chatState.mode = 'PRIVATE_CHAT';
         this.updateChatUI();
-    }
-
-    updateTabStyles(isGlobal) {
-        const tG = document.getElementById('tabGlobal');
-        const tP = document.getElementById('tabPrivate');
-
-        tG.classList.toggle('active', isGlobal);
-        tP.classList.toggle('active', !isGlobal);
-
-        if (isGlobal) {
-            document.getElementById('chatTitle').textContent = '💬 غرفة المعلمة';
-            document.getElementById('backToChatList').style.display = 'none';
-        }
     }
 }

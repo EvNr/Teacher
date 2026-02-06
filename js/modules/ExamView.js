@@ -2,313 +2,169 @@
 import { appStore } from '../core/Store.js';
 import { DATA_STORE } from '../core/DataStore.js';
 import { Router } from '../core/Router.js';
-import { BRAND } from '../core/Brand.js';
 
 export class ExamView {
     constructor(container) {
         this.container = container;
-        this.testId = sessionStorage.getItem('active_test') || 'qudrat';
+        this.testId = sessionStorage.getItem('active_test');
         this.testData = DATA_STORE.TESTS[this.testId];
-        this.currentQuestionIndex = 0;
-        this.answers = new Array(this.testData.questions.length).fill(null);
-        this.flagged = new Array(this.testData.questions.length).fill(false);
-        this.timeLeft = this.testData.duration * 60;
-        this.timerInterval = null;
+        this.answers = {};
+        this.timer = null;
+        this.render();
+    }
 
+    render() {
         if (!this.testData) {
-            alert("Error loading test data");
             Router.navigate('dashboard');
             return;
         }
 
-        this.mount();
-    }
-
-    mount() {
-        this.injectStyles();
-        this.renderLayout();
-        this.startTimer();
-        this.renderQuestion(0);
-    }
-
-    injectStyles() {
-        if (document.getElementById('qiyas-style')) return;
-        const style = document.createElement('style');
-        style.id = 'qiyas-style';
-        style.textContent = `
-            body { background: #f5f7fa !important; overflow: hidden; }
-            #app { padding: 0 !important; margin: 0 !important; height: 100vh; display: flex; flex-direction: column; }
-
-            .q-header {
-                height: 60px; flex: 0 0 60px; background: #0056b3; color: white; display: flex;
-                justify-content: space-between; align-items: center; padding: 0 2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                direction: rtl; font-family: 'Cairo', sans-serif;
-            }
-            .q-body {
-                flex: 1; display: grid; grid-template-columns: 300px 1fr; overflow: hidden;
-            }
-            .q-sidebar {
-                background: #e9ecef; border-left: 1px solid #dee2e6; padding: 1rem; overflow-y: auto;
-                display: flex; flex-direction: column;
-            }
-            .q-main {
-                background: white; padding: 3rem; overflow-y: auto; position: relative;
-            }
-            .q-footer {
-                height: 60px; flex: 0 0 60px; background: #e9ecef; border-top: 1px solid #ccc;
-                display: flex; justify-content: space-between; align-items: center; padding: 0 2rem;
-            }
-
-            /* Mobile / Tablet Responsive Overrides */
-            @media (max-width: 900px) {
-                .q-body {
-                    grid-template-columns: 1fr;
-                    grid-template-rows: auto 1fr;
-                }
-                .q-sidebar {
-                    height: auto;
-                    max-height: 150px; /* Collapsible area */
-                    border-left: none;
-                    border-bottom: 1px solid #ccc;
-                    padding: 10px;
-                    order: 2; /* Put sidebar below question on mobile if preferred, or use a toggle */
-                    display: none; /* Hide by default on small screens, verify via toggle? Or keep simple stack */
-                }
-                /* Better Mobile Approach: Tabs */
-                .q-body.mobile-view {
-                    display: flex;
-                    flex-direction: column;
-                }
-                .q-sidebar.mobile {
-                    display: none; /* Hidden unless toggled */
-                    position: absolute;
-                    top: 60px; left:0; width:100%; height:calc(100% - 120px); z-index:100;
-                }
-                .q-sidebar.mobile.active { display: flex; }
-
-                .q-main { padding: 1.5rem; }
-                .q-header { padding: 0 1rem; font-size: 0.9rem; }
-            }
-
-            /* Simple Stack for now to ensure usability without complex state logic in injected CSS */
-            @media (max-width: 768px) {
-                .q-body { display: flex; flex-direction: column-reverse; } /* Nav on bottom or top? Let's hide nav and use a toggle button or just stack */
-                .q-sidebar {
-                    flex: 0 0 auto;
-                    max-height: 200px;
-                    border-top: 2px solid #ccc;
-                    border-left: none;
-                }
-                .q-main { flex: 1; }
-                .nav-grid { grid-template-columns: repeat(8, 1fr); }
-            }
-
-            /* Grid */
-            .nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 1rem; }
-            .nav-dot {
-                width: 35px; height: 35px; border-radius: 50%; background: #bdc3c7; color: white;
-                display: flex; justify-content: center; align-items: center; cursor: pointer; font-weight: bold;
-            }
-            .nav-dot.active { border: 2px solid #0056b3; transform: scale(1.1); }
-            .nav-dot.answered { background: #27ae60; }
-            .nav-dot.flagged { background: #f1c40f; color: black; }
-
-            /* Question */
-            .option-box {
-                border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; border-radius: 4px; cursor: pointer;
-                display: flex; align-items: center; transition: background 0.2s;
-            }
-            .option-box:hover { background: #f8f9fa; }
-            .option-box.selected { background: #e3f2fd; border-color: #0056b3; }
-            .radio-circle {
-                width: 20px; height: 20px; border: 2px solid #666; border-radius: 50%; margin-left: 15px;
-                position: relative;
-            }
-            .option-box.selected .radio-circle { border-color: #0056b3; }
-            .option-box.selected .radio-circle::after {
-                content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-                width: 10px; height: 10px; background: #0056b3; border-radius: 50%;
-            }
-
-            .btn-q {
-                padding: 8px 25px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; font-weight: bold;
-            }
-            .btn-next { background: #0056b3; color: white; border: none; }
-        `;
-        document.head.appendChild(style);
-    }
-
-    renderLayout() {
         this.container.innerHTML = `
-            <div class="q-header">
-                <div class="timer" id="timerDisplay" style="background:rgba(0,0,0,0.2); padding:5px 15px; border-radius:4px; font-family:monospace; font-size:1.2rem;">00:00</div>
-                <!-- Updated Branding -->
-                <div style="font-weight:bold;">${BRAND.nameAr} | محاكاة قياس</div>
-                <div>${appStore.state.user.name}</div>
-            </div>
+            <div style="min-height:100vh; background:var(--royal-obsidian); padding:2rem;">
 
-            <div class="q-body">
-                <aside class="q-sidebar">
-                    <div style="background:white; padding:15px; border:1px solid #ccc; border-radius:4px; text-align:center; margin-bottom:1rem;">
-                        <strong>بيانات المشتركة:</strong><br>
-                        ${appStore.state.user.name}<br>
-                        <small>الصف ${appStore.state.user.grade}</small>
+                <div class="expert-card" style="max-width:800px; margin:0 auto; padding:0; overflow:hidden;">
+
+                    <!-- Header -->
+                    <div style="background:linear-gradient(135deg, var(--gilded-dark), var(--gilded-gold)); padding:20px; color:white; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <h2 style="font-family:var(--font-heading); margin-bottom:5px;">${this.testData.title}</h2>
+                            <p style="font-size:0.9rem; opacity:0.9;">الزمن المتبقي: <span id="timerDisplay" style="font-weight:bold; font-size:1.2rem;">--:--</span></p>
+                        </div>
+                        <button id="submitExam" class="btn-gold" style="background:white; color:var(--gilded-dark); border:none; box-shadow:none;">تسليم الاختبار</button>
                     </div>
-                    <h4>خريطة الأسئلة</h4>
-                    <div class="nav-grid" id="navGrid"></div>
-                    <div style="margin-top:auto; font-size:0.8rem; color:#666; text-align:center;">
-                        نظام المحاكاة الذكي<br>الحالة: <span style="color:green">متصل</span>
+
+                    <!-- Question Area -->
+                    <div id="questionContainer" style="padding:2rem;">
+                        <!-- Rendered by JS -->
                     </div>
-                </aside>
 
-                <main class="q-main" id="questionArea">
-                    <!-- Question Content -->
-                </main>
+                    <!-- Navigation -->
+                    <div style="padding:20px; background:rgba(0,0,0,0.2); border-top:1px solid rgba(255,255,255,0.05); display:flex; justify-content:center; gap:10px; flex-wrap:wrap;" id="navContainer">
+                        <!-- Buttons -->
+                    </div>
+
+                </div>
+
             </div>
-
-            <footer class="q-footer">
-                <div>
-                    <button class="btn-q" id="prevBtn">السابق</button>
-                    <button class="btn-q" id="flagBtn" style="background:#f1c40f; border:none; margin-right:10px;">⚑ مراجعة</button>
-                </div>
-                <div>
-                    <button class="btn-q btn-next" id="nextBtn">التالي</button>
-                    <button class="btn-q" id="submitBtn" style="background:#27ae60; color:white; border:none; display:none;">إنهاء المحاكاة</button>
-                </div>
-            </footer>
         `;
 
-        this.attachEvents();
+        this.startExam();
     }
 
-    renderQuestion(index) {
-        this.currentQuestionIndex = index;
-        const q = this.testData.questions[index];
-        const area = document.getElementById('questionArea');
+    startExam() {
+        let timeLeft = this.testData.duration * 60;
+        const display = document.getElementById('timerDisplay');
 
-        area.innerHTML = `
-            <div style="margin-bottom:2rem; font-size:1.4rem; font-weight:bold; color:#333; line-height:1.6;">
-                <span style="background:#0056b3; color:white; padding:2px 10px; border-radius:4px; font-size:1rem; vertical-align:middle; margin-left:10px;">سؤال ${index + 1}</span>
-                ${q.question}
+        this.timer = setInterval(() => {
+            timeLeft--;
+            const m = Math.floor(timeLeft / 60);
+            const s = timeLeft % 60;
+            display.textContent = `${m}:${s < 10 ? '0'+s : s}`;
+
+            if (timeLeft <= 0) this.finishExam();
+        }, 1000);
+
+        this.renderQuestions();
+    }
+
+    renderQuestions() {
+        const container = document.getElementById('questionContainer');
+        const nav = document.getElementById('navContainer');
+
+        container.innerHTML = this.testData.questions.map((q, idx) => `
+            <div class="question-block" id="q_${idx}" style="display:${idx === 0 ? 'block' : 'none'}; animation:fadeIn 0.5s;">
+                <div style="margin-bottom:20px; color:var(--gilded-gold); font-weight:bold;">سؤال ${idx + 1} من ${this.testData.questions.length} <span style="font-size:0.8rem; color:var(--luxury-grey);">(${q.section})</span></div>
+                <p class="text-white" style="font-size:1.1rem; line-height:1.6; margin-bottom:20px;">${q.question}</p>
+
+                <div style="display:grid; gap:10px;">
+                    ${q.options.map((opt, oIdx) => `
+                        <label style="display:flex; align-items:center; gap:10px; padding:15px; background:rgba(255,255,255,0.05); border-radius:8px; cursor:pointer; transition:0.2s;" class="opt-label">
+                            <input type="radio" name="q${idx}" value="${oIdx}" style="accent-color:var(--gilded-gold);">
+                            <span class="text-white">${opt}</span>
+                        </label>
+                    `).join('')}
+                </div>
             </div>
-            <div class="options-list">
-                ${q.options.map((opt, i) => `
-                    <div class="option-box ${this.answers[index] === i ? 'selected' : ''}" data-val="${i}">
-                        <div class="radio-circle"></div>
-                        ${opt}
-                    </div>
-                `).join('')}
-            </div>
-        `;
+        `).join('');
 
-        // Update UI State
-        this.updateNavGrid();
+        // Navigation Buttons
+        nav.innerHTML = this.testData.questions.map((_, idx) => `
+            <button class="nav-btn" data-idx="${idx}" style="width:35px; height:35px; border-radius:50%; border:1px solid var(--luxury-grey); background:transparent; color:var(--luxury-grey); cursor:pointer;">${idx + 1}</button>
+        `).join('');
 
-        document.getElementById('prevBtn').disabled = index === 0;
-        document.getElementById('nextBtn').style.display = index === this.testData.questions.length - 1 ? 'none' : 'inline-block';
-        document.getElementById('submitBtn').style.display = index === this.testData.questions.length - 1 ? 'inline-block' : 'none';
+        this.updateNav(0);
+        this.attachQuestionEvents();
+    }
 
-        const flagBtn = document.getElementById('flagBtn');
-        flagBtn.innerHTML = this.flagged[index] ? '⚑ إلغاء' : '⚑ مراجعة';
+    attachQuestionEvents() {
+        // Radio Changes
+        this.container.querySelectorAll('input[type="radio"]').forEach(input => {
+            input.addEventListener('change', (e) => {
+                const qIdx = parseInt(e.target.name.substring(1));
+                this.answers[qIdx] = parseInt(e.target.value);
 
-        // Bind Options
-        area.querySelectorAll('.option-box').forEach(box => {
-            box.addEventListener('click', () => {
-                this.answers[index] = parseInt(box.dataset.val);
-                this.renderQuestion(index);
+                // Update Nav Style
+                const btn = document.querySelector(`.nav-btn[data-idx="${qIdx}"]`);
+                if (btn) {
+                    btn.style.background = 'var(--gilded-gold)';
+                    btn.style.color = 'var(--royal-obsidian)';
+                    btn.style.borderColor = 'var(--gilded-gold)';
+                }
             });
         });
+
+        // Nav Click
+        this.container.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const idx = parseInt(btn.dataset.idx);
+                this.showQuestion(idx);
+            });
+        });
+
+        document.getElementById('submitExam').addEventListener('click', () => {
+            if (confirm('هل أنت متأكد من تسليم الاختبار؟')) this.finishExam();
+        });
     }
 
-    updateNavGrid() {
-        const grid = document.getElementById('navGrid');
-        grid.innerHTML = this.testData.questions.map((_, i) => {
-            let classes = 'nav-dot';
-            if (i === this.currentQuestionIndex) classes += ' active';
-            if (this.answers[i] !== null) classes += ' answered';
-            if (this.flagged[i]) classes += ' flagged';
-            return `<div class="${classes}" data-index="${i}">${i + 1}</div>`;
-        }).join('');
+    showQuestion(idx) {
+        this.container.querySelectorAll('.question-block').forEach(el => el.style.display = 'none');
+        document.getElementById(`q_${idx}`).style.display = 'block';
+        this.updateNav(idx);
     }
 
-    startTimer() {
-        this.timerInterval = setInterval(() => {
-            this.timeLeft--;
-            const m = Math.floor(this.timeLeft / 60).toString().padStart(2, '0');
-            const s = (this.timeLeft % 60).toString().padStart(2, '0');
-            const el = document.getElementById('timerDisplay');
-            if(el) el.textContent = `⏳ ${m}:${s}`;
-
-            if (this.timeLeft <= 0) this.finish(true);
-        }, 1000);
+    updateNav(currentIdx) {
+        this.container.querySelectorAll('.nav-btn').forEach(btn => {
+            if (parseInt(btn.dataset.idx) === currentIdx) {
+                btn.style.boxShadow = '0 0 10px var(--gilded-gold)';
+            } else {
+                btn.style.boxShadow = 'none';
+            }
+        });
     }
 
-    finish(forced = false) {
-        clearInterval(this.timerInterval);
+    finishExam() {
+        clearInterval(this.timer);
 
-        // Calculate Score
         let score = 0;
-        this.testData.questions.forEach((q, i) => {
-            if (this.answers[i] === q.correct) score++;
+        this.testData.questions.forEach((q, idx) => {
+            if (this.answers[idx] === q.correct) score++;
         });
 
-        // Award XP
-        const xpEarned = score * 50;
+        const percentage = Math.round((score / this.testData.questions.length) * 100);
 
-        // Persist to Auth DB
-        import('../core/Auth.js').then(module => {
-            const newTotal = module.Auth.updateXP(appStore.state.user.id, xpEarned);
-
-            // Update Session State
-            const updatedUser = { ...appStore.state.user, xp: newTotal };
-            appStore.setUser(updatedUser);
-        });
-
-        // Remove Styles
-        const style = document.getElementById('qiyas-style');
-        if (style) style.remove();
-
-        // Show Result Modal via Router
+        // Show Result Modal
         this.container.innerHTML = `
-            <div class="moe-card" style="max-width:600px; margin:2rem auto; text-align:center;">
-                <h1 style="color:var(--moe-green)">تم إنجاز الاختبار بنجاح</h1>
-                <div style="font-size:3rem; font-weight:bold; margin:2rem 0;">${score} / ${this.testData.questions.length}</div>
-                <p>تم حفظ نتيجتك في سجلك الأكاديمي.</p>
-                <div style="margin-top:2rem;">
-                    <button id="returnBtn" class="btn-moe">العودة للرئيسية</button>
+            <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--royal-obsidian);">
+                <div class="expert-card" style="text-align:center; max-width:400px; animation:slideUp 0.5s;">
+                    <div style="font-size:4rem; margin-bottom:1rem;">🏆</div>
+                    <h2 class="text-gold font-heading">نتيجة الاختبار</h2>
+                    <div style="font-size:3rem; font-weight:bold; color:white; margin:20px 0;">${percentage}%</div>
+                    <p class="text-grey" style="margin-bottom:2rem;">إجابات صحيحة: ${score} من ${this.testData.questions.length}</p>
+                    <button id="backDash" class="btn-gold" style="width:100%;">العودة للرئيسية</button>
                 </div>
             </div>
         `;
 
-        document.getElementById('returnBtn').addEventListener('click', () => Router.navigate('dashboard'));
-    }
-
-    attachEvents() {
-        document.getElementById('navGrid').addEventListener('click', (e) => {
-            if (e.target.classList.contains('nav-dot')) {
-                this.renderQuestion(parseInt(e.target.dataset.index));
-            }
-        });
-
-        document.getElementById('nextBtn').addEventListener('click', () => {
-            if (this.currentQuestionIndex < this.testData.questions.length - 1) {
-                this.renderQuestion(this.currentQuestionIndex + 1);
-            }
-        });
-
-        document.getElementById('prevBtn').addEventListener('click', () => {
-            if (this.currentQuestionIndex > 0) {
-                this.renderQuestion(this.currentQuestionIndex - 1);
-            }
-        });
-
-        document.getElementById('flagBtn').addEventListener('click', () => {
-            this.flagged[this.currentQuestionIndex] = !this.flagged[this.currentQuestionIndex];
-            this.renderQuestion(this.currentQuestionIndex);
-        });
-
-        document.getElementById('submitBtn').addEventListener('click', () => {
-            if (confirm("هل أنت متأكد من إنهاء المحاكاة؟")) this.finish();
-        });
+        document.getElementById('backDash').addEventListener('click', () => Router.navigate('dashboard'));
     }
 }

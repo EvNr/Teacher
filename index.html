@@ -4,17 +4,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>أكاديمية صابرين للرياضيات | Sabreen Math Academy</title>
-    <link rel="stylesheet" href="css/moe-official.css">
-    <link rel="stylesheet" href="css/chat.css">
+    <title>أكاديمية صابرين | Sabreen Academy</title>
+    <!-- Expert Theme -->
+    <link rel="stylesheet" href="css/expert-theme.css">
+
+    <style>
+        /* Loader Override */
+        .loader-overlay {
+            position: fixed; inset: 0; background: var(--royal-obsidian); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .spinner {
+            width: 50px; height: 50px; border: 3px solid rgba(197,160,89,0.3);
+            border-top-color: var(--gilded-gold); border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
 </head>
 <body>
     <div id="app">
         <div class="loader-overlay">
             <div style="text-align:center">
                 <div class="spinner"></div>
-                <h3 style="margin-top:1rem; color:var(--moe-green)">أكاديمية صابرين</h3>
-                <p style="font-size:0.8rem; color:#888;">جاري بدء الجلسة الآمنة...</p>
+                <h3 style="margin-top:1.5rem; color:var(--gilded-gold); font-family:var(--font-heading); letter-spacing:1px;">أكاديمية صابرين</h3>
+                <p style="font-size:0.8rem; color:var(--luxury-grey); margin-top:5px;">جاري تحميل النظام الآمن...</p>
             </div>
         </div>
     </div>
