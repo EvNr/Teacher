@@ -1,70 +1,26 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>أكاديمية صابرين للرياضيات | Sabreen Math Academy</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <title>منصة التعليم الموحدة | الرياضيات</title>
+    <link rel="stylesheet" href="css/moe-official.css">
+    <!-- Inline Qiyas CSS for simulation mode (will be loaded dynamically or kept separated) -->
+    <!-- We will let the Router load specific CSS if needed, or put everything in moe-official for now -->
 </head>
 <body>
-    <header>
-        <nav>
-            <div class="logo">أكاديمية صابرين</div>
-            <button id="theme-toggle" class="theme-btn" aria-label="Toggle Dark Mode">🌓</button>
-            <ul>
-                <li><a href="index.html">الرئيسية</a></li>
-                <li><a href="resources.html">المصادر</a></li>
-                <li><a href="login.html">تسجيل الدخول</a></li>
-                <li><a href="register.html">حساب جديد</a></li>
-            </ul>
-        </nav>
-    </header>
+    <div id="app">
+        <div class="loader-overlay">
+            <div style="text-align:center">
+                <div class="spinner"></div>
+                <h3 style="margin-top:1rem; color:var(--moe-green)">جاري الاتصال بالبوابة الوزارية...</h3>
+                <p style="font-size:0.8rem; color:#888;">Establishing Secure Encryption</p>
+            </div>
+        </div>
+    </div>
 
-    <main id="app">
-        <section class="hero fade-in">
-            <div class="hero-content">
-                <h1>مرحباً بكم في أكاديمية صابرين</h1>
-                <p>منصتك الأولى لتعلم الرياضيات (منهج 1447) بطريقة حديثة ومبتكرة</p>
-                <div class="cta-buttons">
-                    <a href="register.html" class="btn btn-primary">ابدأ الآن</a>
-                    <a href="resources.html" class="btn btn-secondary">استكشف المصادر</a>
-                </div>
-            </div>
-            <div class="hero-image">
-                <!-- Placeholder for a math-related illustration -->
-                <div class="math-illustration">
-                    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="100" cy="100" r="80" fill="#3498db" opacity="0.2"/>
-                        <path d="M60,140 L100,60 L140,140 Z" fill="none" stroke="#2c3e50" stroke-width="4"/>
-                        <circle cx="100" cy="60" r="5" fill="#e74c3c"/>
-                        <text x="90" y="160" font-family="Cairo" font-size="14" fill="#2c3e50">Math</text>
-                    </svg>
-                </div>
-            </div>
-        </section>
-
-        <section class="features fade-in">
-            <div class="feature-card">
-                <h3>تعليم تفاعلي</h3>
-                <p>دروس مصممة بأحدث التقنيات لجعل الرياضيات ممتعة.</p>
-            </div>
-            <div class="feature-card">
-                <h3>محتوى شامل</h3>
-                <p>تغطية كاملة لمناهج المرحلة الثانوية في المملكة.</p>
-            </div>
-            <div class="feature-card">
-                <h3>بيئة آمنة</h3>
-                <p>مجتمع تعليمي آمن وداعم للطالبات.</p>
-            </div>
-        </section>
-    </main>
-
-    <footer>
-        <p>&copy; 2025 جميع الحقوق محفوظة - أكاديمية صابرين للرياضيات</p>
-    </footer>
-
-    <script src="js/data.js"></script>
-    <script src="js/main.js"></script>
+    <!-- Main Entry Point -->
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>

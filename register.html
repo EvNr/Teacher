@@ -1,62 +1,0 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إنشاء حساب | أكاديمية صابرين</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
-</head>
-<body>
-    <header>
-        <nav>
-            <div class="logo">أكاديمية صابرين</div>
-            <button id="theme-toggle" class="theme-btn" aria-label="Toggle Dark Mode">🌓</button>
-            <ul>
-                <li><a href="index.html">الرئيسية</a></li>
-                <li><a href="resources.html">المصادر</a></li>
-                <li><a href="login.html">تسجيل الدخول</a></li>
-                <li><a href="register.html" class="active">حساب جديد</a></li>
-            </ul>
-        </nav>
-    </header>
-
-    <main class="auth-container fade-in">
-        <div class="auth-box">
-            <h2>إنشاء حساب جديد</h2>
-            <form id="registerForm">
-                <div class="form-group">
-                    <label for="fullname">الاسم الكامل</label>
-                    <input type="text" id="fullname" required>
-                </div>
-                <div class="form-group">
-                    <label for="email">البريد الإلكتروني</label>
-                    <input type="email" id="email" required>
-                </div>
-                <div class="form-group">
-                    <label for="password">كلمة المرور</label>
-                    <input type="password" id="password" required>
-                </div>
-                <div class="form-group">
-                    <label for="grade">المرحلة الدراسية</label>
-                    <select id="grade" required>
-                        <option value="">اختر المرحلة</option>
-                        <option value="10">الصف الأول ثانوي</option>
-                        <option value="11">الصف الثاني ثانوي</option>
-                        <option value="12">الصف الثالث ثانوي</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-primary full-width">تسجيل</button>
-            </form>
-            <p class="auth-link">لديك حساب بالفعل؟ <a href="login.html">سجل دخولك</a></p>
-        </div>
-    </main>
-
-    <footer>
-        <p>&copy; 2025 جميع الحقوق محفوظة - أكاديمية صابرين للرياضيات</p>
-    </footer>
-
-    <script src="js/data.js"></script>
-    <script src="js/main.js"></script>
-</body>
-</html>
