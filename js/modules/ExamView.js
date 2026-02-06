@@ -2,6 +2,7 @@
 import { appStore } from '../core/Store.js';
 import { DATA_STORE } from '../core/DataStore.js';
 import { Router } from '../core/Router.js';
+import { BRAND } from '../core/Brand.js';
 
 export class ExamView {
     constructor(container) {
@@ -97,20 +98,22 @@ export class ExamView {
         this.container.innerHTML = `
             <div class="q-header">
                 <div class="timer" id="timerDisplay" style="background:rgba(0,0,0,0.2); padding:5px 15px; border-radius:4px; font-family:monospace; font-size:1.2rem;">00:00</div>
-                <div style="font-weight:bold;">مركز قياس | ${this.testData.title}</div>
+                <!-- Updated Branding -->
+                <div style="font-weight:bold;">${BRAND.nameAr} | محاكاة قياس</div>
                 <div>${appStore.state.user.name}</div>
             </div>
 
             <div class="q-body">
                 <aside class="q-sidebar">
                     <div style="background:white; padding:15px; border:1px solid #ccc; border-radius:4px; text-align:center; margin-bottom:1rem;">
-                        <strong>رقم المشترك:</strong> 1059483<br>
-                        <small>المملكة العربية السعودية</small>
+                        <strong>بيانات المشتركة:</strong><br>
+                        ${appStore.state.user.name}<br>
+                        <small>الصف ${appStore.state.user.grade}</small>
                     </div>
-                    <h4>مستكشف الأسئلة</h4>
+                    <h4>خريطة الأسئلة</h4>
                     <div class="nav-grid" id="navGrid"></div>
                     <div style="margin-top:auto; font-size:0.8rem; color:#666; text-align:center;">
-                        Secure Browser v2.4<br>Sync: <span style="color:green">Connected</span>
+                        نظام المحاكاة الذكي<br>الحالة: <span style="color:green">متصل</span>
                     </div>
                 </aside>
 
@@ -126,7 +129,7 @@ export class ExamView {
                 </div>
                 <div>
                     <button class="btn-q btn-next" id="nextBtn">التالي</button>
-                    <button class="btn-q" id="submitBtn" style="background:#27ae60; color:white; border:none; display:none;">إنهاء الاختبار</button>
+                    <button class="btn-q" id="submitBtn" style="background:#27ae60; color:white; border:none; display:none;">إنهاء المحاكاة</button>
                 </div>
             </footer>
         `;
@@ -215,12 +218,12 @@ export class ExamView {
         const style = document.getElementById('qiyas-style');
         if (style) style.remove();
 
-        // Show Result Modal via Router or custom HTML replacement
+        // Show Result Modal via Router
         this.container.innerHTML = `
             <div class="moe-card" style="max-width:600px; margin:2rem auto; text-align:center;">
-                <h1 style="color:var(--moe-green)">تم إرسال الإجابات بنجاح</h1>
+                <h1 style="color:var(--moe-green)">تم إنجاز الاختبار بنجاح</h1>
                 <div style="font-size:3rem; font-weight:bold; margin:2rem 0;">${score} / ${this.testData.questions.length}</div>
-                <p>تم اعتماد نتيجتك في نظام "نور" للمحاكاة.</p>
+                <p>تم حفظ نتيجتك في سجلك الأكاديمي.</p>
                 <div style="margin-top:2rem;">
                     <button id="returnBtn" class="btn-moe">العودة للرئيسية</button>
                 </div>
@@ -255,7 +258,7 @@ export class ExamView {
         });
 
         document.getElementById('submitBtn').addEventListener('click', () => {
-            if (confirm("هل أنت متأكد من إنهاء الاختبار؟")) this.finish();
+            if (confirm("هل أنت متأكد من إنهاء المحاكاة؟")) this.finish();
         });
     }
 }

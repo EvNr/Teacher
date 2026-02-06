@@ -2,6 +2,7 @@
 import { appStore } from '../core/Store.js';
 import { DATA_STORE } from '../core/DataStore.js';
 import { Router } from '../core/Router.js';
+import { BRAND } from '../core/Brand.js';
 
 export class TeacherView {
     constructor(container) {
@@ -17,11 +18,11 @@ export class TeacherView {
         this.container.innerHTML = `
             <nav style="background:var(--moe-dark); color:white; padding:1rem 2rem; display:flex; justify-content:space-between; align-items:center;">
                 <div style="font-weight:bold; display:flex; align-items:center; gap:10px;">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/Emblem_of_Saudi_Arabia.svg/256px-Emblem_of_Saudi_Arabia.svg.png" width="30" style="filter:brightness(0) invert(1);">
-                    بوابة المعلم - لوحة القيادة الوزارية
+                    ${BRAND.logoSvg.replace('width="50"', 'width="30"').replace('height="50"', 'height="30"').replace(/var\(--moe-green\)/g, 'white').replace(/var\(--moe-gold\)/g, '#f0a500')}
+                    أكاديمية صابرين - مركز التحكم
                 </div>
                 <div>
-                    مرحباً، ${this.user.name} | <button id="logoutBtn" style="background:none; border:none; color:#f0a500; cursor:pointer; font-weight:bold;">تسجيل خروج</button>
+                    أ. صابرين | <button id="logoutBtn" style="background:none; border:none; color:#f0a500; cursor:pointer; font-weight:bold;">خروج</button>
                 </div>
             </nav>
 
@@ -32,21 +33,18 @@ export class TeacherView {
                     <!-- Analytics Panel -->
                     <div style="display:flex; flex-direction:column; gap:2rem;">
 
-                        <!-- Section Comparison Chart (SVG) -->
+                        <!-- Section Comparison Chart -->
                         <div class="moe-card">
-                            <h3>📊 مقارنة أداء الشعب (الصف الثاني ثانوي)</h3>
+                            <h3>📊 تحليل أداء الشعب الدراسية</h3>
                             <div style="margin-top:2rem; height:300px; position:relative; border-left:1px solid #ccc; border-bottom:1px solid #ccc; padding:20px;">
-                                <!-- Y-Axis Labels -->
                                 <div style="position:absolute; left:-30px; top:0;">100</div>
                                 <div style="position:absolute; left:-30px; bottom:0;">0</div>
 
-                                <!-- Bars for 11-A -->
                                 <div style="position:absolute; bottom:0; left:20%; width:15%; height:${stats11A.avg}%; background:var(--moe-green); transition:height 1s; display:flex; align-items:flex-end; justify-content:center; color:white; font-weight:bold; border-radius:4px 4px 0 0;">
                                     ${stats11A.avg}%
                                 </div>
                                 <div style="position:absolute; bottom:-30px; left:20%; width:15%; text-align:center;">11-A</div>
 
-                                <!-- Bars for 11-B -->
                                 <div style="position:absolute; bottom:0; left:60%; width:15%; height:${stats11B.avg}%; background:var(--moe-gold); transition:height 1s; display:flex; align-items:flex-end; justify-content:center; color:white; font-weight:bold; border-radius:4px 4px 0 0;">
                                     ${stats11B.avg}%
                                 </div>
@@ -56,13 +54,13 @@ export class TeacherView {
 
                         <!-- Student List Table -->
                         <div class="moe-card">
-                            <h3>📋 سجل الطلاب الأكاديمي</h3>
+                            <h3>📋 متابعة الطالبات</h3>
                             <table style="width:100%; border-collapse:collapse; margin-top:1rem;">
                                 <thead>
                                     <tr style="background:#f5f5f5; color:var(--moe-dark);">
-                                        <th style="padding:10px; text-align:right;">اسم الطالبة</th>
+                                        <th style="padding:10px; text-align:right;">الاسم</th>
                                         <th style="padding:10px; text-align:right;">الصف/الشعبة</th>
-                                        <th style="padding:10px; text-align:center;">نقاط XP</th>
+                                        <th style="padding:10px; text-align:center;">النقاط (XP)</th>
                                         <th style="padding:10px; text-align:center;">الحالة</th>
                                     </tr>
                                 </thead>
@@ -73,7 +71,7 @@ export class TeacherView {
                                             <td style="padding:10px;">${u.grade} - ${u.section || 'N/A'}</td>
                                             <td style="padding:10px; text-align:center; font-weight:bold; color:var(--moe-gold);">${u.xp}</td>
                                             <td style="padding:10px; text-align:center;">
-                                                <span class="security-badge" style="background:#e8f5e9; color:#2e7d32; border:none;">منتظم</span>
+                                                <span class="security-badge" style="background:#e8f5e9; color:#2e7d32; border:none;">نشط</span>
                                             </td>
                                         </tr>
                                     `).join('')}
@@ -83,24 +81,24 @@ export class TeacherView {
 
                     </div>
 
-                    <!-- Side Panel: Notifications & Reports -->
+                    <!-- Side Panel -->
                     <div style="display:flex; flex-direction:column; gap:2rem;">
                          <div class="moe-card" style="background:linear-gradient(135deg, var(--moe-dark), var(--moe-green)); color:white;">
-                            <h3 style="color:white; border-bottom-color:rgba(255,255,255,0.2);">🔴 تنبيهات وزارية</h3>
+                            <h3 style="color:white; border-bottom-color:rgba(255,255,255,0.2);">💡 مهام الأسبوع</h3>
                             <ul style="margin-top:1rem; list-style:none; font-size:0.9rem;">
                                 <li style="margin-bottom:10px; padding-bottom:5px; border-bottom:1px solid rgba(255,255,255,0.1);">
-                                    <strong>إغلاق رصد الدرجات:</strong><br>يتبقى 3 أيام على إغلاق النظام.
+                                    <strong>إعداد اختبار الفصل الثالث</strong>
                                 </li>
                                 <li style="margin-bottom:10px;">
-                                    <strong>تعميم رقم 452:</strong><br>تحديث خطة مسارات الثانوية.
+                                    <strong>مراجعة تقارير التحصيلي</strong>
                                 </li>
                             </ul>
                          </div>
 
                          <div class="moe-card">
-                             <h3>📥 تصدير التقارير</h3>
-                             <button class="btn-outline" style="width:100%; margin-bottom:10px;">تقرير الأداء الفصلي (PDF)</button>
-                             <button class="btn-outline" style="width:100%;">تحليل الفاقد التعليمي (Excel)</button>
+                             <h3>📥 التقارير والإحصاءات</h3>
+                             <button class="btn-outline" style="width:100%; margin-bottom:10px;">تصدير كشف الدرجات (PDF)</button>
+                             <button class="btn-outline" style="width:100%;">تحليل النتائج (Excel)</button>
                          </div>
                     </div>
 
