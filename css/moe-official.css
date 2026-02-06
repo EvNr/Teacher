@@ -29,6 +29,13 @@ body {
     color: var(--text-primary);
     direction: rtl;
     min-height: 100vh;
+
+    /* Security: Prevent Selection */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none; /* iOS Safari disable touch callout */
 }
 
 /* --- Official Typography --- */
@@ -182,4 +189,16 @@ h1, h2, h3, h4 {
 
 /* --- Responsive Grid --- */
 .grid-cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
-@media (max-width: 768px) { .grid-cols-2 { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .grid-cols-2 { grid-template-columns: 1fr; } }
+
+/* Mobile Padding Adjustments */
+@media (max-width: 480px) {
+    body { font-size: 14px; }
+    .moe-card { padding: 1.5rem 1rem; }
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.3rem; }
+
+    /* Navbar stack */
+    nav { flex-direction: column; gap: 10px; text-align: center; }
+    nav > div:last-child { width: 100%; justify-content: center; }
+}

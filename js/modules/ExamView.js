@@ -59,6 +59,50 @@ export class ExamView {
                 display: flex; justify-content: space-between; align-items: center; padding: 0 2rem;
             }
 
+            /* Mobile / Tablet Responsive Overrides */
+            @media (max-width: 900px) {
+                .q-body {
+                    grid-template-columns: 1fr;
+                    grid-template-rows: auto 1fr;
+                }
+                .q-sidebar {
+                    height: auto;
+                    max-height: 150px; /* Collapsible area */
+                    border-left: none;
+                    border-bottom: 1px solid #ccc;
+                    padding: 10px;
+                    order: 2; /* Put sidebar below question on mobile if preferred, or use a toggle */
+                    display: none; /* Hide by default on small screens, verify via toggle? Or keep simple stack */
+                }
+                /* Better Mobile Approach: Tabs */
+                .q-body.mobile-view {
+                    display: flex;
+                    flex-direction: column;
+                }
+                .q-sidebar.mobile {
+                    display: none; /* Hidden unless toggled */
+                    position: absolute;
+                    top: 60px; left:0; width:100%; height:calc(100% - 120px); z-index:100;
+                }
+                .q-sidebar.mobile.active { display: flex; }
+
+                .q-main { padding: 1.5rem; }
+                .q-header { padding: 0 1rem; font-size: 0.9rem; }
+            }
+
+            /* Simple Stack for now to ensure usability without complex state logic in injected CSS */
+            @media (max-width: 768px) {
+                .q-body { display: flex; flex-direction: column-reverse; } /* Nav on bottom or top? Let's hide nav and use a toggle button or just stack */
+                .q-sidebar {
+                    flex: 0 0 auto;
+                    max-height: 200px;
+                    border-top: 2px solid #ccc;
+                    border-left: none;
+                }
+                .q-main { flex: 1; }
+                .nav-grid { grid-template-columns: repeat(8, 1fr); }
+            }
+
             /* Grid */
             .nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 1rem; }
             .nav-dot {
