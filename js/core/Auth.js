@@ -1,4 +1,6 @@
 
+import { DATA_STORE } from './DataStore.js';
+
 /**
  * MoE Secure Authentication Module
  * Implements PBKDF2-SHA256 for password hashing and AES-GCM simulation for session tokens.
@@ -6,12 +8,13 @@
  */
 
 export class Auth {
+
+    // --- Existing Encryption Simulation ---
     static async hashPassword(password) {
         const encoder = new TextEncoder();
         const data = encoder.encode(password);
         const salt = window.crypto.getRandomValues(new Uint8Array(16)); // Random salt
 
-        // Import password as key material
         const keyMaterial = await window.crypto.subtle.importKey(
             "raw",
             data,
@@ -20,7 +23,6 @@ export class Auth {
             ["deriveBits", "deriveKey"]
         );
 
-        // Derive key (Hash)
         const key = await window.crypto.subtle.deriveKey(
             {
                 name: "PBKDF2",
@@ -34,7 +36,6 @@ export class Auth {
             ["encrypt", "decrypt"]
         );
 
-        // Export key to raw format (for storage mock)
         const exportedKey = await window.crypto.subtle.exportKey("raw", key);
         return {
             hash: Array.from(new Uint8Array(exportedKey)).map(b => b.toString(16).padStart(2, '0')).join(''),
@@ -42,21 +43,125 @@ export class Auth {
         };
     }
 
-    static async verifyMock(password, storedHash) {
-        // In a real scenario, we'd re-hash with the stored salt.
-        // For this prototype, we'll simulate a secure check to allow our mock users to login easily.
-        // But we WILL visualize the "Verification" process in the UI.
-        return new Promise(resolve => setTimeout(() => resolve(true), 1500));
+    // --- New Student Identity Logic ---
+
+    /**
+     * Finds a student in the roster by name, grade, and section.
+     * @param {string} name - Student Full Name
+     * @param {string} grade - Grade Level (10, 11, 12)
+     * @param {string} section - Section (A, B)
+     */
+    static findStudentInRoster(name, grade, section) {
+        const gradeData = DATA_STORE.STUDENT_ROSTER[grade];
+        if (!gradeData) return null;
+
+        const sectionData = gradeData[section];
+        if (!sectionData) return null;
+
+        // Exact match for now (Prototype), usually fuzzy search in prod
+        if (sectionData.includes(name)) {
+            return {
+                name: name,
+                grade: grade,
+                section: section,
+                id: `${grade}_${section}_${name.replace(/\s+/g, '_')}` // Unique ID
+            };
+        }
+        return null;
     }
 
-    static generateSessionToken() {
-        const array = new Uint8Array(32);
+    /**
+     * Checks if the student has already bound a contact method (2FA).
+     */
+    static getAuthStatus(studentId) {
+        return DATA_STORE.AUTH_DB[studentId] || null;
+    }
+
+    /**
+     * Binds a contact method to the student ID.
+     */
+    static bindContact(studentId, contactType, contactValue) {
+        DATA_STORE.AUTH_DB[studentId] = {
+            contactType: contactType,
+            contactValue: contactValue,
+            registeredAt: new Date().toISOString(),
+            xp: 0
+        };
+        // Persist to localStorage for demo persistence across reloads
+        localStorage.setItem('AUTH_DB', JSON.stringify(DATA_STORE.AUTH_DB));
+        return true;
+    }
+
+    // --- XP Persistence Logic ---
+
+    /**
+     * Gets current XP for a student.
+     */
+    static getXP(studentId) {
+        if (DATA_STORE.AUTH_DB[studentId]) {
+            return DATA_STORE.AUTH_DB[studentId].xp || 0;
+        }
+        return 0;
+    }
+
+    /**
+     * Updates XP for a student and persists it.
+     */
+    static updateXP(studentId, amount) {
+        if (!DATA_STORE.AUTH_DB[studentId]) {
+            // Implicit registration if missing (should rarely happen in this flow)
+            DATA_STORE.AUTH_DB[studentId] = { xp: 0 };
+        }
+
+        DATA_STORE.AUTH_DB[studentId].xp = (DATA_STORE.AUTH_DB[studentId].xp || 0) + amount;
+        localStorage.setItem('AUTH_DB', JSON.stringify(DATA_STORE.AUTH_DB));
+        return DATA_STORE.AUTH_DB[studentId].xp;
+    }
+
+    // --- 2FA OTP Logic ---
+
+    /**
+     * Generates a crypto-random 6 digit code.
+     */
+    static generateOTP() {
+        const array = new Uint8Array(4);
         window.crypto.getRandomValues(array);
-        return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+        const num = new DataView(array.buffer).getUint32(0);
+        return (num % 1000000).toString().padStart(6, '0');
     }
 
-    static maskEmail(email) {
-        const [name, domain] = email.split('@');
-        return `${name[0]}***${name[name.length-1]}@${domain}`;
+    /**
+     * Simulates sending the OTP via Email/SMS.
+     * In this prototype, it shows a Toast/Alert with the code.
+     */
+    static sendMockOTP(contactValue, otpCode) {
+        console.log(`[SECURE SENDER] Sending OTP ${otpCode} to ${contactValue}`);
+
+        // Create a Mock Notification in UI
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: #333; color: #fff; padding: 15px 25px; border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 99999; font-family: sans-serif;
+            border-left: 5px solid #2ecc71; text-align: center; direction: ltr;
+        `;
+        notification.innerHTML = `
+            <strong>New Message</strong><br>
+            Your Sabreen Academy Code is: <span style="font-size:1.2em; color:#2ecc71; font-weight:bold;">${otpCode}</span>
+        `;
+        document.body.appendChild(notification);
+
+        setTimeout(() => notification.remove(), 8000); // 8 seconds to read
+    }
+
+    // Load persisted DB on init
+    static initAuthDB() {
+        const stored = localStorage.getItem('AUTH_DB');
+        if (stored) {
+            Object.assign(DATA_STORE.AUTH_DB, JSON.parse(stored));
+        }
     }
 }
+
+// Initialize persistence
+Auth.initAuthDB();

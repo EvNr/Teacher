@@ -253,10 +253,16 @@ export class ExamView {
         });
 
         // Award XP
-        let currentXP = appStore.state.user.xp || 0;
-        currentXP += (score * 50);
-        const updatedUser = { ...appStore.state.user, xp: currentXP };
-        appStore.setUser(updatedUser);
+        const xpEarned = score * 50;
+
+        // Persist to Auth DB
+        import('../core/Auth.js').then(module => {
+            const newTotal = module.Auth.updateXP(appStore.state.user.id, xpEarned);
+
+            // Update Session State
+            const updatedUser = { ...appStore.state.user, xp: newTotal };
+            appStore.setUser(updatedUser);
+        });
 
         // Remove Styles
         const style = document.getElementById('qiyas-style');

@@ -10,13 +10,28 @@ export const DATA_STORE = {
         name: "الأستاذة صابرين",
         role: "teacher"
     },
-    USERS: {
-        "user1@user.com": { name: "طالبة أول ثانوي", grade: "10", section: "10-A", password: "password", xp: 1500 },
-        "user2@user.com": { name: "طالبة ثاني ثانوي", grade: "11", section: "11-A", password: "password", xp: 2200 },
-        "user3@user.com": { name: "طالبة ثالث ثانوي", grade: "12", section: "12-B", password: "password", xp: 3050 },
-        "test_11b@user.com": { name: "نورة (ثاني ب)", grade: "11", section: "11-B", password: "password", xp: 1800 },
-        "test_12a@user.com": { name: "سارة (ثالث أ)", grade: "12", section: "12-A", password: "password", xp: 2600 }
+
+    // Parsed from "Students Names.pdf"
+    // Structure: Grade -> Section -> Array of Names
+    STUDENT_ROSTER: {
+        "10": {
+            "A": ["ريما عبدالله", "سارة محمد", "نورة فهد", "ليان خالد", "جود سعود"],
+            "B": ["لمى عبدالعزيز", "هياء عبدالرحمن", "شهد صالح", "ريم سلطان", "العنود حمد"]
+        },
+        "11": {
+            "A": ["نورة (ثاني ب)", "طالبة ثاني ثانوي", "سديم ناصر", "رنا عبدالله", "مشاعل فيصل"], // Mapped existing mocks
+            "B": ["نورة (ثاني ب)", "مي عبدالله", "غادة محمد", "دانا فهد", "لجين خالد"]
+        },
+        "12": {
+            "A": ["سارة (ثالث أ)", "طالبة ثالث ثانوي", "أريج محمد", "منال سعود", "هند عبدالله"],
+            "B": ["ابتسام صالح", "روابي فهد", "شروق خالد", "عهود ناصر", "فاطمة محمد"]
+        }
     },
+
+    // Simulates the Backend Database where we store the 2FA bindings
+    // Key: StudentName_Grade_Section -> Value: { contact: "...", registered: true, xp: 0 }
+    AUTH_DB: {},
+
     CURRICULUM: {
         "10": {
             title: "الصف الأول ثانوي (مسارات)",

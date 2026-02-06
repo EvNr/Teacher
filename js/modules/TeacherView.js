@@ -65,13 +65,15 @@ export class TeacherView {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    ${Object.values(DATA_STORE.USERS).map(u => `
+                                    ${this.getAllStudents().map(u => `
                                         <tr style="border-bottom:1px solid #eee;">
                                             <td style="padding:10px;">${u.name}</td>
-                                            <td style="padding:10px;">${u.grade} - ${u.section || 'N/A'}</td>
-                                            <td style="padding:10px; text-align:center; font-weight:bold; color:var(--moe-gold);">${u.xp}</td>
+                                            <td style="padding:10px;">${u.grade} - ${u.section}</td>
+                                            <td style="padding:10px; text-align:center; font-weight:bold; color:var(--moe-gold);">${u.xp || 0}</td>
                                             <td style="padding:10px; text-align:center;">
-                                                <span class="security-badge" style="background:#e8f5e9; color:#2e7d32; border:none;">نشط</span>
+                                                <span class="security-badge" style="background:${u.registered ? '#e8f5e9' : '#fff3cd'}; color:${u.registered ? '#2e7d32' : '#856404'}; border:none;">
+                                                    ${u.registered ? 'مسجل' : 'غير مسجل'}
+                                                </span>
                                             </td>
                                         </tr>
                                     `).join('')}
@@ -107,6 +109,31 @@ export class TeacherView {
         `;
 
         this.attachEvents();
+    }
+
+    getAllStudents() {
+        const students = [];
+        const roster = DATA_STORE.STUDENT_ROSTER;
+
+        // Flatten the roster structure (Grade -> Section -> Array)
+        Object.keys(roster).forEach(grade => {
+            Object.keys(roster[grade]).forEach(section => {
+                roster[grade][section].forEach(name => {
+                    // Reconstruct ID to fetch status
+                    const id = `${grade}_${section}_${name.replace(/\s+/g, '_')}`;
+                    const authData = DATA_STORE.AUTH_DB[id] || {};
+
+                    students.push({
+                        name: name,
+                        grade: grade,
+                        section: section,
+                        xp: authData.xp || 0,
+                        registered: !!authData.contactValue
+                    });
+                });
+            });
+        });
+        return students;
     }
 
     attachEvents() {
