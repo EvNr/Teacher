@@ -136,5 +136,18 @@ export const DATA_STORE = {
     ANALYTICS: {
         "11": { "A": { avg: 85, high: 98, low: 72 }, "B": { avg: 79, high: 94, low: 65 } },
         "12": { "A": { avg: 88, high: 99, low: 75 }, "B": { avg: 91, high: 100, low: 80 } }
-    }
+    },
+
+    // Communication & Configuration
+    MOTD: {
+        active: true,
+        title: "تنبيه هام: الاختبارات التجريبية",
+        message: "عزيزاتي الطالبات، تم تفعيل اختبارات المحاكاة للقدرات والتحصيلي. يرجى البدء في التدريب والاستعداد الجيد.",
+        date: "2025-05-20"
+    },
+
+    // Initial Chat State (Will be merged with LocalStorage)
+    CHAT_MESSAGES: [
+        { id: 1, sender: "الأستاذة صابرين", role: "teacher", text: "مرحباً بكم في منصة التواصل. يمكنكم طرح الأسئلة هنا.", time: "08:00 AM" }
+    ]
 };

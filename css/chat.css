@@ -1,0 +1,280 @@
+
+/* --- Chat Widget --- */
+.chat-widget {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9000;
+}
+
+.chat-toggle-btn {
+    width: 60px;
+    height: 60px;
+    background: var(--moe-green);
+    border-radius: 50%;
+    color: white;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    transition: transform 0.3s;
+}
+
+.chat-toggle-btn:hover {
+    transform: scale(1.1);
+}
+
+.chat-window {
+    position: absolute;
+    bottom: 80px;
+    right: 0;
+    width: 350px;
+    height: 500px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 5px 30px rgba(0,0,0,0.15);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid #eee;
+    animation: slideUp 0.3s ease-out;
+}
+
+.chat-window.open {
+    display: flex;
+}
+
+@keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+
+.chat-header {
+    background: var(--moe-green);
+    color: white;
+    padding: 15px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chat-body {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    background: #f9f9f9;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.chat-footer {
+    padding: 15px;
+    background: white;
+    border-top: 1px solid #eee;
+    display: flex;
+    gap: 10px;
+}
+
+.chat-input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    outline: none;
+}
+
+.chat-msg {
+    padding: 10px 15px;
+    border-radius: 15px;
+    max-width: 80%;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    position: relative;
+}
+
+.chat-msg.student {
+    background: white;
+    border: 1px solid #eee;
+    align-self: flex-start;
+    border-bottom-right-radius: 2px;
+}
+
+.chat-msg.teacher {
+    background: var(--moe-gold);
+    color: white;
+    align-self: flex-start; /* Teacher is also incoming for students */
+    border-bottom-right-radius: 2px;
+}
+
+.chat-msg.me {
+    background: var(--moe-green);
+    color: white;
+    align-self: flex-end;
+    border-bottom-left-radius: 2px;
+    border-bottom-right-radius: 15px;
+}
+
+.msg-meta {
+    font-size: 0.7rem;
+    opacity: 0.7;
+    margin-bottom: 3px;
+    display: block;
+}
+
+/* --- MOTD Modal --- */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(5px);
+}
+
+.motd-box {
+    background: white;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    animation: zoomIn 0.3s;
+}
+
+@keyframes zoomIn { from { transform:scale(0.9); opacity:0; } to { transform:scale(1); opacity:1; } }
+
+.motd-header {
+    background: linear-gradient(135deg, var(--moe-green), var(--moe-dark));
+    padding: 20px;
+    color: white;
+    text-align: center;
+}
+
+.motd-content {
+    padding: 2rem;
+    text-align: center;
+    line-height: 1.8;
+    color: #444;
+}
+
+.motd-footer {
+    padding: 1rem;
+    background: #f8f9fa;
+    text-align: center;
+}
+
+/* --- Notification Center --- */
+.notif-container {
+    position: relative;
+    margin-right: 15px;
+    cursor: pointer;
+}
+
+.notif-icon {
+    font-size: 1.5rem;
+    color: white; /* Assumes dark nav background */
+    transition: transform 0.2s;
+}
+
+.notif-icon:hover {
+    transform: rotate(15deg);
+}
+
+.notif-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #ff4444;
+    color: white;
+    font-size: 0.7rem;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    border: 2px solid var(--moe-dark);
+}
+
+.notif-dropdown {
+    position: absolute;
+    top: 40px;
+    left: 0; /* Align left because RTL direction means left is the "inner" side usually, wait.. RTL. Left is far side? */
+    /* Let's align to the icon properly in RTL */
+    left: auto;
+    right: -100px; /* Adjust based on width */
+    width: 300px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    z-index: 1000;
+    display: none;
+    overflow: hidden;
+    border: 1px solid #eee;
+}
+
+.notif-dropdown.show {
+    display: block;
+    animation: slideDown 0.2s;
+}
+
+@keyframes slideDown { from { transform:translateY(-10px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+
+.notif-header {
+    background: #f8f9fa;
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    font-weight: bold;
+    color: #555;
+    display: flex;
+    justify-content: space-between;
+}
+
+.notif-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.notif-item {
+    padding: 15px;
+    border-bottom: 1px solid #f5f5f5;
+    transition: background 0.2s;
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+
+.notif-item:hover {
+    background: #f0f8ff;
+}
+
+.notif-item.unread {
+    background: #e8f5e9; /* Light green */
+}
+
+.notif-item h4 {
+    margin: 0 0 5px 0;
+    font-size: 0.9rem;
+    color: var(--moe-dark);
+}
+
+.notif-item p {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #666;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.notif-item .time {
+    font-size: 0.7rem;
+    color: #999;
+    display: block;
+    margin-top: 5px;
+    text-align: left;
+}
