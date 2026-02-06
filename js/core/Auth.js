@@ -89,13 +89,46 @@ export class Auth {
     /**
      * Simple fuzzy matcher. Returns true if 'input' matches 'target' sufficiently.
      * Matches if 'input' is a subset of 'target' parts (e.g. "Arwa Alazmi" matches "Arwa Fahad Alazmi").
+     * Uses robust Arabic normalization.
      */
     static fuzzyMatch(input, target) {
-        const inputParts = input.trim().split(/\s+/);
-        const targetParts = target.trim().split(/\s+/);
+        const normInput = this.normalizeArabic(input);
+        const normTarget = this.normalizeArabic(target);
 
-        // Check if all input parts exist in target (in order is preferred, but simple set inclusion works for now)
-        return inputParts.every(part => target.includes(part));
+        const inputParts = normInput.split(/\s+/);
+
+        // Check if all input parts exist in target
+        return inputParts.every(part => normTarget.includes(part));
+    }
+
+    /**
+     * Normalizes Arabic text for comparison.
+     * - Unifies Alif forms (أ, إ, آ -> ا)
+     * - Unifies Yaa/Alif Maqsura (ي, ى -> ي)
+     * - Unifies Ta Marbuta/Ha (ة, ه -> ه)
+     * - Removes Tatweel (ـ)
+     * - Removes Diacritics (Tashkeel)
+     */
+    static normalizeArabic(text) {
+        if (!text) return "";
+        let norm = text;
+
+        // Remove Diacritics
+        norm = norm.replace(/[\u064B-\u065F\u0670]/g, "");
+
+        // Remove Tatweel
+        norm = norm.replace(/\u0640/g, "");
+
+        // Normalize Alif (أ, إ, آ -> ا)
+        norm = norm.replace(/[أإآ]/g, "ا");
+
+        // Normalize Yaa (ى -> ي)
+        norm = norm.replace(/ى/g, "ي");
+
+        // Normalize Ta Marbuta (ة -> ه)
+        norm = norm.replace(/ة/g, "ه");
+
+        return norm.trim();
     }
 
     /**
