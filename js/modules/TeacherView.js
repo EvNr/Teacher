@@ -137,7 +137,7 @@ export class TeacherView {
                 <!-- Chat Widget (Enhanced) -->
                 <div class="chat-widget">
                     <div class="chat-window" id="chatWindow">
-                        <div class="chat-header" id="chatHeader" style="background:linear-gradient(135deg, var(--moe-gold), var(--moe-dark));">
+                        <div class="chat-header" id="chatHeader">
                             <span id="chatTitle">💬 غرفة المعلمة</span>
                             <div style="display:flex; gap:10px;">
                                 <span style="font-size:0.8rem; cursor:pointer; display:none;" id="backToChatList">⬅️ عودة</span>
@@ -147,15 +147,15 @@ export class TeacherView {
 
                          <!-- Tabs -->
                         <div style="display:flex; background:#f1f1f1; border-bottom:1px solid #ddd;">
-                            <button class="tab-btn active" id="tabGlobal" style="flex:1; border:none; padding:10px; background:white; cursor:pointer; border-bottom:2px solid var(--moe-gold);">العام</button>
-                            <button class="tab-btn" id="tabPrivate" style="flex:1; border:none; padding:10px; background:#f1f1f1; cursor:pointer; border-bottom:2px solid transparent;">الخاص</button>
+                            <button class="tab-btn active" id="tabGlobal" style="flex:1; border:none; padding:10px; cursor:pointer;">العام</button>
+                            <button class="tab-btn" id="tabPrivate" style="flex:1; border:none; padding:10px; cursor:pointer;">الخاص</button>
                         </div>
 
                         <div class="chat-body" id="chatBody"></div>
 
                         <form class="chat-footer" id="chatForm">
                             <input type="text" class="chat-input" placeholder="رد على الطالبات..." required>
-                            <button type="submit" class="btn-moe" style="border-radius:50%; width:40px; height:40px; padding:0; background:var(--moe-gold);">➤</button>
+                            <button type="submit" class="btn-moe" style="border-radius:50%; width:40px; height:40px; padding:0;">➤</button>
                         </form>
 
                          <!-- Search Modal (Hidden inside widget) -->
@@ -165,7 +165,7 @@ export class TeacherView {
                              <button id="closeSearch" style="margin-top:10px; padding:5px; background:#eee; border:none; cursor:pointer;">إلغاء</button>
                         </div>
                     </div>
-                    <div class="chat-toggle-btn" id="toggleChat" style="background:var(--moe-gold);">💬</div>
+                    <div class="chat-toggle-btn" id="toggleChat">💬</div>
                 </div>
 
             </main>
@@ -227,7 +227,7 @@ export class TeacherView {
                 document.getElementById('backToChatList').style.display = 'block';
 
                 footer.style.display = 'flex';
-                body.innerHTML = this.renderMessages(chat.messages, false); // No delete for private yet? Or yes? Keep false for simplicity for now.
+                body.innerHTML = this.renderMessages(chat.messages, false);
             }
         }
 
@@ -441,10 +441,9 @@ export class TeacherView {
     updateTabStyles(isGlobal) {
         const tG = document.getElementById('tabGlobal');
         const tP = document.getElementById('tabPrivate');
-        tG.style.background = isGlobal ? 'white' : '#f1f1f1';
-        tG.style.borderBottomColor = isGlobal ? 'var(--moe-gold)' : 'transparent';
-        tP.style.background = !isGlobal ? 'white' : '#f1f1f1';
-        tP.style.borderBottomColor = !isGlobal ? 'var(--moe-gold)' : 'transparent';
+
+        tG.classList.toggle('active', isGlobal);
+        tP.classList.toggle('active', !isGlobal);
 
         if (isGlobal) {
             document.getElementById('chatTitle').textContent = '💬 غرفة المعلمة';

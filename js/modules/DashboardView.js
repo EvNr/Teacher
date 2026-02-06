@@ -158,8 +158,8 @@ export class DashboardView {
 
                         <!-- Tabs -->
                         <div style="display:flex; background:#f1f1f1; border-bottom:1px solid #ddd;">
-                            <button class="tab-btn active" id="tabGlobal" style="flex:1; border:none; padding:10px; background:white; cursor:pointer; border-bottom:2px solid var(--moe-green);">العام</button>
-                            <button class="tab-btn" id="tabPrivate" style="flex:1; border:none; padding:10px; background:#f1f1f1; cursor:pointer; border-bottom:2px solid transparent;">الخاص</button>
+                            <button class="tab-btn active" id="tabGlobal" style="flex:1; border:none; padding:10px; cursor:pointer;">العام</button>
+                            <button class="tab-btn" id="tabPrivate" style="flex:1; border:none; padding:10px; cursor:pointer;">الخاص</button>
                         </div>
 
                         <div class="chat-body" id="chatBody">
@@ -205,7 +205,7 @@ export class DashboardView {
 
     updateNotifications() {
         const notifs = this.chat.getNotifications().filter(n => n.target === 'ALL' || n.target === this.user.name);
-        const unreadCount = notifs.filter(n => !n.read).length; // Simplified read/unread logic (everything starts unread in this implementation)
+        const unreadCount = notifs.filter(n => !n.read).length;
 
         const badge = document.getElementById('notifBadge');
         if (badge) {
@@ -481,11 +481,8 @@ export class DashboardView {
         const tG = document.getElementById('tabGlobal');
         const tP = document.getElementById('tabPrivate');
 
-        tG.style.background = isGlobal ? 'white' : '#f1f1f1';
-        tG.style.borderBottomColor = isGlobal ? 'var(--moe-green)' : 'transparent';
-
-        tP.style.background = !isGlobal ? 'white' : '#f1f1f1';
-        tP.style.borderBottomColor = !isGlobal ? 'var(--moe-green)' : 'transparent';
+        tG.classList.toggle('active', isGlobal);
+        tP.classList.toggle('active', !isGlobal);
 
         // Reset Header
         if (isGlobal) {

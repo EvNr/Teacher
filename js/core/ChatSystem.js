@@ -3,142 +3,159 @@ import { DATA_STORE } from './DataStore.js';
 
 /**
  * Chat System Core
- * Handles message persistence and cross-tab synchronization via LocalStorage.
+ * Refactored to use PHP Backend for real cross-device communication.
  */
 export class ChatSystem {
     constructor(callback) {
         this.callback = callback; // Function to update UI
         this.storageKey = 'SABREEN_CHAT_DB';
-        this.motdKey = 'SABREEN_MOTD_DB';
         this.privateKey = 'SABREEN_PRIVATE_DB';
-        this.notifKey = 'SABREEN_NOTIF_DB';
+        this.cache = {
+            global: [],
+            private: {},
+            motd: { active: false },
+            alerts: []
+        };
 
-        // Initialize if empty
-        if (!localStorage.getItem(this.storageKey)) localStorage.setItem(this.storageKey, JSON.stringify(DATA_STORE.CHAT_MESSAGES));
-        if (!localStorage.getItem(this.motdKey)) localStorage.setItem(this.motdKey, JSON.stringify(DATA_STORE.MOTD));
-        if (!localStorage.getItem(this.privateKey)) localStorage.setItem(this.privateKey, JSON.stringify({}));
-        if (!localStorage.getItem(this.notifKey)) localStorage.setItem(this.notifKey, JSON.stringify([]));
+        // Initial Fetch
+        this.poll();
 
-        // Listen for cross-tab updates
-        window.addEventListener('storage', (e) => {
-            if ([this.storageKey, this.privateKey, this.notifKey].includes(e.key)) {
-                this.notify(e.key);
+        // Start Polling (every 3 seconds)
+        this.poller = setInterval(() => this.poll(), 3000);
+    }
+
+    async poll() {
+        try {
+            const res = await fetch('api/chat_read.php?t=' + Date.now());
+            if (res.ok) {
+                const data = await res.json();
+
+                // Check for changes to trigger update
+                const hashStart = JSON.stringify(this.cache);
+                const hashEnd = JSON.stringify(data);
+
+                this.cache = data;
+
+                if (hashStart !== hashEnd) {
+                    this.notify(this.storageKey);
+                    this.notify(this.privateKey);
+                }
             }
-        });
+        } catch (e) {
+            console.error('Chat Poll Error:', e);
+        }
     }
 
     getMessages() {
-        return JSON.parse(localStorage.getItem(this.storageKey) || '[]');
+        return this.cache.global || [];
     }
 
     getPrivateChats() {
-        return JSON.parse(localStorage.getItem(this.privateKey) || '{}');
+        return this.cache.private || {};
     }
 
     initPrivateChat(sender, recipientName) {
         const participants = [sender.name, recipientName].sort();
         const chatId = participants.join('_');
-        const db = this.getPrivateChats();
 
-        if (!db[chatId]) {
-            db[chatId] = { participants, messages: [] };
-            localStorage.setItem(this.privateKey, JSON.stringify(db));
-            this.notify(this.privateKey);
-        }
+        // We notify server to init if needed, but mostly we just need the local ID
+        fetch('api/chat_write.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                type: 'PRIVATE',
+                action: 'INIT',
+                chatId: chatId,
+                participants: participants
+            })
+        });
+
         return chatId;
     }
 
     getNotifications() {
-        return JSON.parse(localStorage.getItem(this.notifKey) || '[]');
+        // Return global alerts
+        return this.cache.alerts || [];
     }
 
     sendMessage(user, text) {
-        const msgs = this.getMessages();
-
-        // Basic Profanity Filter (Arabic & English)
-        const badWords = ['badword', 'stupid', 'ghabi', 'kalb', 'hmar']; // Placeholder list
-        let cleanText = text;
-        badWords.forEach(word => {
-            const reg = new RegExp(word, 'gi');
-            cleanText = cleanText.replace(reg, '***');
-        });
-
-        const newMsg = {
-            id: Date.now(),
+        const cleanText = this.filterProfanity(text);
+        const msg = {
             sender: user.name,
-            role: user.role || 'student', // 'teacher' or 'student'
+            role: user.role || 'student',
             text: cleanText,
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
 
-        msgs.push(newMsg);
-        localStorage.setItem(this.storageKey, JSON.stringify(msgs));
+        // Optimistic UI Update
+        // this.cache.global.push(msg); // Optional: wait for server is safer for consistency
+        // this.notify(this.storageKey);
 
-        // Direct notify for current tab
-        this.notify(this.storageKey);
-        return newMsg;
+        fetch('api/chat_write.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                type: 'GLOBAL',
+                payload: msg
+            })
+        }).then(() => this.poll());
+
+        return msg;
     }
 
     sendPrivateMessage(sender, recipientName, text) {
-        // Generate Chat ID: Alphabetically sorted names ensure unique ID for the pair
         const participants = [sender.name, recipientName].sort();
         const chatId = participants.join('_');
 
-        const db = this.getPrivateChats();
-        if (!db[chatId]) {
-            db[chatId] = { participants, messages: [] };
-        }
-
-        const newMsg = {
-            id: Date.now(),
+        const cleanText = this.filterProfanity(text);
+        const msg = {
             sender: sender.name,
-            text: this.filterProfanity(text),
+            text: cleanText,
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             read: false
         };
 
-        db[chatId].messages.push(newMsg);
-        localStorage.setItem(this.privateKey, JSON.stringify(db));
-
-        // Send Notification to Recipient
-        this.sendNotification(recipientName, {
-            type: 'message',
-            title: `رسالة من ${sender.name}`,
-            text: text,
-            link: 'chat',
-            chatId: chatId
-        });
-
-        this.notify(this.privateKey);
+        fetch('api/chat_write.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                type: 'PRIVATE',
+                chatId: chatId,
+                participants: participants,
+                payload: msg
+            })
+        }).then(() => this.poll());
     }
 
     sendNotification(targetUser, data) {
-        // targetUser 'ALL' means global
-        const notifs = this.getNotifications();
-        const newNotif = {
-            id: Date.now(),
-            target: targetUser, // 'ALL' or Username
-            type: data.type, // 'message', 'alert'
-            title: data.title,
-            text: data.text,
-            chatId: data.chatId || null,
-            time: new Date().toLocaleString(),
-            read: false
-        };
-
-        notifs.unshift(newNotif); // Add to top
-        // Limit history to 50
-        if (notifs.length > 50) notifs.pop();
-
-        localStorage.setItem(this.notifKey, JSON.stringify(notifs));
-        this.notify(this.notifKey);
+        if (targetUser === 'ALL') {
+            fetch('api/announcements_write.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    type: 'ALERT',
+                    payload: {
+                        target: 'ALL',
+                        title: data.title,
+                        text: data.text,
+                        time: new Date().toLocaleString()
+                    }
+                })
+            }).then(() => this.poll());
+        }
+        // Private notifications are handled implicitly by chat updates
     }
 
     deleteMessage(id) {
-        let msgs = this.getMessages();
-        msgs = msgs.filter(m => m.id !== id);
-        localStorage.setItem(this.storageKey, JSON.stringify(msgs));
-        this.notify(this.storageKey);
+        fetch('api/chat_write.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                type: 'GLOBAL',
+                action: 'DELETE',
+                id: id
+            })
+        }).then(() => this.poll());
     }
 
     filterProfanity(text) {
@@ -158,7 +175,7 @@ export class ChatSystem {
     // --- MOTD Logic ---
 
     getMOTD() {
-        return JSON.parse(localStorage.getItem(this.motdKey));
+        return this.cache.motd || {};
     }
 
     setMOTD(title, message, active = true) {
@@ -168,6 +185,14 @@ export class ChatSystem {
             active,
             date: new Date().toISOString().split('T')[0]
         };
-        localStorage.setItem(this.motdKey, JSON.stringify(motd));
+
+        fetch('api/announcements_write.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                type: 'MOTD',
+                payload: motd
+            })
+        }).then(() => this.poll());
     }
 }
