@@ -115,23 +115,38 @@ export class TeacherView {
         const students = [];
         const roster = DATA_STORE.STUDENT_ROSTER;
 
-        // Flatten the roster structure (Grade -> Section -> Array)
         Object.keys(roster).forEach(grade => {
-            Object.keys(roster[grade]).forEach(section => {
-                roster[grade][section].forEach(name => {
-                    // Reconstruct ID to fetch status
-                    const id = `${grade}_${section}_${name.replace(/\s+/g, '_')}`;
-                    const authData = DATA_STORE.AUTH_DB[id] || {};
+            const gradeData = roster[grade];
 
+            if (Array.isArray(gradeData)) {
+                // Grade 10 Logic (Flat Array)
+                gradeData.forEach(name => {
+                    const id = `${grade}_General_${name.replace(/\s+/g, '_')}`;
+                    const authData = DATA_STORE.AUTH_DB[id] || {};
                     students.push({
                         name: name,
                         grade: grade,
-                        section: section,
+                        section: 'General',
                         xp: authData.xp || 0,
                         registered: !!authData.contactValue
                     });
                 });
-            });
+            } else {
+                // Grade 11/12 Logic (Sections)
+                Object.keys(gradeData).forEach(section => {
+                    gradeData[section].forEach(name => {
+                        const id = `${grade}_${section}_${name.replace(/\s+/g, '_')}`;
+                        const authData = DATA_STORE.AUTH_DB[id] || {};
+                        students.push({
+                            name: name,
+                            grade: grade,
+                            section: section,
+                            xp: authData.xp || 0,
+                            registered: !!authData.contactValue
+                        });
+                    });
+                });
+            }
         });
         return students;
     }

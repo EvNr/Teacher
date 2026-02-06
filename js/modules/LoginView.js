@@ -49,8 +49,8 @@ export class LoginView {
         if (this.state === 'IDENTIFY') {
             return `
                 <div class="input-group">
-                    <label>الاسم الثلاثي</label>
-                    <input type="text" id="fullName" required placeholder="مثال: سارة محمد" autocomplete="off">
+                    <label>اسم الطالبة</label>
+                    <input type="text" id="fullName" required placeholder="الاسم الأول والثاني والعائلة (مثال: أروى فهد العازمي)" autocomplete="off">
                 </div>
                 <div style="display:flex; gap:10px;">
                     <div class="input-group" style="flex:1">
@@ -61,7 +61,7 @@ export class LoginView {
                             <option value="12">ثالث ثانوي (12)</option>
                         </select>
                     </div>
-                    <div class="input-group" style="flex:1">
+                    <div class="input-group" id="sectionGroup" style="flex:1; display:none;">
                         <label>الشعبة</label>
                         <select id="section" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px;">
                             <option value="A">أ (A)</option>
@@ -139,6 +139,21 @@ export class LoginView {
                 this.tempUser = null;
                 this.render();
             });
+        }
+
+        // Grade Logic (Hide/Show Section)
+        const gradeSelect = document.getElementById('grade');
+        const sectionGroup = document.getElementById('sectionGroup');
+        if (gradeSelect && sectionGroup) {
+            gradeSelect.addEventListener('change', () => {
+                if (gradeSelect.value === '10') {
+                    sectionGroup.style.display = 'none';
+                } else {
+                    sectionGroup.style.display = 'block';
+                }
+            });
+            // Init
+            if (gradeSelect.value === '10') sectionGroup.style.display = 'none';
         }
 
         form.addEventListener('submit', async (e) => {

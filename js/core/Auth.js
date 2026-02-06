@@ -47,27 +47,55 @@ export class Auth {
 
     /**
      * Finds a student in the roster by name, grade, and section.
-     * @param {string} name - Student Full Name
+     * Supports fuzzy matching and Grade 10 logic (no section).
+     * @param {string} name - Student Name (Simplified or Full)
      * @param {string} grade - Grade Level (10, 11, 12)
-     * @param {string} section - Section (A, B)
+     * @param {string} section - Section (A, B) - Ignored for Grade 10
      */
     static findStudentInRoster(name, grade, section) {
         const gradeData = DATA_STORE.STUDENT_ROSTER[grade];
         if (!gradeData) return null;
 
-        const sectionData = gradeData[section];
-        if (!sectionData) return null;
+        let foundName = null;
+        let finalSection = section;
 
-        // Exact match for now (Prototype), usually fuzzy search in prod
-        if (sectionData.includes(name)) {
+        // Grade 10 Logic: Flat Array
+        if (grade === "10") {
+            if (Array.isArray(gradeData)) {
+                // Find matching name in the flat array
+                foundName = gradeData.find(rosterName => this.fuzzyMatch(name, rosterName));
+                finalSection = "General"; // Internal marker for no-section
+            }
+        }
+        // Grade 11/12 Logic: Section Object
+        else {
+            const sectionData = gradeData[section];
+            if (sectionData && Array.isArray(sectionData)) {
+                foundName = sectionData.find(rosterName => this.fuzzyMatch(name, rosterName));
+            }
+        }
+
+        if (foundName) {
             return {
-                name: name,
+                name: foundName,
                 grade: grade,
-                section: section,
-                id: `${grade}_${section}_${name.replace(/\s+/g, '_')}` // Unique ID
+                section: finalSection,
+                id: `${grade}_${finalSection}_${foundName.replace(/\s+/g, '_')}` // Unique ID
             };
         }
         return null;
+    }
+
+    /**
+     * Simple fuzzy matcher. Returns true if 'input' matches 'target' sufficiently.
+     * Matches if 'input' is a subset of 'target' parts (e.g. "Arwa Alazmi" matches "Arwa Fahad Alazmi").
+     */
+    static fuzzyMatch(input, target) {
+        const inputParts = input.trim().split(/\s+/);
+        const targetParts = target.trim().split(/\s+/);
+
+        // Check if all input parts exist in target (in order is preferred, but simple set inclusion works for now)
+        return inputParts.every(part => target.includes(part));
     }
 
     /**
