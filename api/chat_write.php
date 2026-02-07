@@ -16,13 +16,37 @@ if (!$data) {
 
 // Handle Write
 if ($input) {
-    if (isset($input['type']) && $input['type'] === 'GLOBAL') {
+    $type = $input['type'] ?? '';
+
+    if ($type === 'GLOBAL') {
         // Append global message
         $data['global'][] = $input['payload'];
-
         // Limit to last 50 messages
         if (count($data['global']) > 50) {
             $data['global'] = array_slice($data['global'], -50);
+        }
+    }
+    elseif ($type === 'MOTD') {
+        // Set MOTD
+        $data['motd'] = $input['payload'];
+    }
+    elseif ($type === 'OVERWRITE') {
+        // Replace full data (used for deletion)
+        // Ensure we only overwrite global messages to be safe
+        if (isset($input['payload']['global'])) {
+            $data['global'] = $input['payload']['global'];
+        }
+    }
+    elseif ($type === 'PRIVATE') {
+        // Handle Private Chat Init
+        if (isset($input['action']) && $input['action'] === 'INIT') {
+            $chatId = $input['chatId'];
+            if (!isset($data['private'][$chatId])) {
+                $data['private'][$chatId] = [
+                    'participants' => $input['participants'],
+                    'messages' => []
+                ];
+            }
         }
     }
 

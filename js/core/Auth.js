@@ -8,88 +8,128 @@ import { appStore } from './Store.js';
  */
 export class Auth {
     constructor() {
-        // Use the singleton appStore
         this.store = appStore;
+        this.loadAuthDB();
+    }
+
+    loadAuthDB() {
+        const stored = localStorage.getItem('vision_auth_db');
+        if (stored) {
+            try {
+                const parsed = JSON.parse(stored);
+                // Merge with existing logic if needed, or just overwrite
+                DATA_STORE.AUTH_DB = { ...DATA_STORE.AUTH_DB, ...parsed };
+            } catch (e) {
+                console.error("Auth Load Error", e);
+            }
+        }
+    }
+
+    saveAuthDB() {
+        localStorage.setItem('vision_auth_db', JSON.stringify(DATA_STORE.AUTH_DB));
     }
 
     /**
-     * Authenticate User (Login)
-     * Supports Teacher (Email/Pass) and Student (Name/Secret).
+     * Step 1: Check User Status
+     * Returns:
+     * - 'TEACHER': If credentials match teacher (Handled in LoginView separately)
+     * - 'NEW_USER': Student exists in roster but has no auth record.
+     * - 'EXISTING_USER': Student has an auth record (Secret Question set).
+     * - 'NOT_FOUND': Student not in roster.
+     * - 'ERROR': Mismatched Grade/Section.
      */
-    async login(identifier, secret, type = 'student') {
+    async checkUserStatus(name, grade, section) {
         await this.simulateNetworkDelay();
 
-        // 1. Teacher Login
-        if (identifier === DATA_STORE.TEACHER.email && secret === DATA_STORE.TEACHER.password) {
+        // Find in Roster
+        const student = this.findStudentInRoster(name);
+        if (!student) return { status: 'NOT_FOUND', message: 'عذراً، اسمك غير موجود في كشوفات المدرسة.' };
+
+        // Verify Grade/Section
+        if (student.grade !== grade) return { status: 'ERROR', message: 'البيانات غير مطابقة للسجلات (الصف الدراسي).' };
+        if (student.section && student.section !== section) return { status: 'ERROR', message: 'البيانات غير مطابقة للسجلات (الشعبة).' };
+
+        // Check Auth DB
+        const authRecord = DATA_STORE.AUTH_DB[student.name];
+        if (authRecord) {
+            return {
+                status: 'EXISTING_USER',
+                question: authRecord.secretQuestion,
+                student: student
+            };
+        } else {
+            return {
+                status: 'NEW_USER',
+                student: student
+            };
+        }
+    }
+
+    /**
+     * Step 2a: Setup New Account (Secret Question)
+     */
+    async setupAccount(student, question, answer) {
+        await this.simulateNetworkDelay();
+
+        // Double check existence to prevent race conditions (simulated)
+        if (DATA_STORE.AUTH_DB[student.name]) {
+            return { success: false, message: 'تم تسجيل هذا الحساب مسبقاً.' };
+        }
+
+        DATA_STORE.AUTH_DB[student.name] = {
+            secretQuestion: question,
+            secretAnswer: this.normalizeAnswer(answer),
+            registeredAt: new Date(),
+            xp: 0,
+            badges: []
+        };
+        this.saveAuthDB();
+
+        return this.createSession(student);
+    }
+
+    /**
+     * Step 2b: Login Existing User (Verify Answer)
+     */
+    async loginWithAnswer(student, answer) {
+        await this.simulateNetworkDelay();
+
+        const authRecord = DATA_STORE.AUTH_DB[student.name];
+        if (!authRecord) return { success: false, message: 'حدث خطأ. الحساب غير موجود.' };
+
+        if (this.normalizeAnswer(answer) === authRecord.secretAnswer) {
+            return this.createSession(student);
+        } else {
+            return { success: false, message: 'إجابة السؤال السري غير صحيحة.' };
+        }
+    }
+
+    /**
+     * Teacher Login
+     */
+    async loginTeacher(email, password) {
+        await this.simulateNetworkDelay();
+        if (email === DATA_STORE.TEACHER.email && password === DATA_STORE.TEACHER.password) {
             const session = { ...DATA_STORE.TEACHER, lastLogin: new Date() };
             this.store.setUser(session);
-            return { success: true, user: session };
+            return { success: true };
         }
-
-        // 2. Student Login
-        if (type === 'student') {
-            // Identifier is Name
-            const student = this.findStudentInRoster(identifier);
-            if (!student) return { success: false, message: 'اسم الطالب غير موجود في السجلات الرسمية.' };
-
-            const authRecord = DATA_STORE.AUTH_DB[student.name];
-
-            // If registered, check password
-            if (authRecord) {
-                if (authRecord.password === secret) {
-                    const session = {
-                        ...student,
-                        ...authRecord, // Includes XP, progress
-                        role: 'student',
-                        lastLogin: new Date()
-                    };
-                    this.store.setUser(session);
-                    return { success: true, user: session };
-                } else {
-                    return { success: false, message: 'كلمة المرور غير صحيحة.' };
-                }
-            } else {
-                return { success: false, message: 'هذا الحساب غير مسجل. الرجاء إنشاء حساب جديد.' };
-            }
-        }
-
-        return { success: false, message: 'بيانات الدخول غير صحيحة.' };
+        return { success: false, message: 'بيانات المعلم غير صحيحة.' };
     }
 
     /**
-     * Register New Student Account
+     * Create Session Helper
      */
-    async register(name, grade, section, password) {
-        await this.simulateNetworkDelay();
-
-        try {
-            // 1. Verify Roster Presence
-            const student = this.findStudentInRoster(name);
-            if (!student) return { success: false, message: 'عذراً، اسمك غير موجود في كشوفات المدرسة.' };
-
-            // 2. Check Grade/Section match (Security)
-            if (student.grade !== grade) return { success: false, message: 'البيانات غير مطابقة للسجلات (الصف الدراسي).' };
-            if (student.section && student.section !== section) return { success: false, message: 'البيانات غير مطابقة للسجلات (الشعبة).' };
-
-            // 3. Check if already registered
-            if (DATA_STORE.AUTH_DB[student.name]) {
-                return { success: false, message: 'هذا الحساب مسجل مسبقاً. حاول تسجيل الدخول.' };
-            }
-
-            // 4. Create Account
-            DATA_STORE.AUTH_DB[student.name] = {
-                password: password, // In a real app, hash this!
-                registeredAt: new Date(),
-                xp: 0,
-                badges: []
-            };
-
-            // Auto Login
-            return this.login(name, password, 'student');
-        } catch (e) {
-            console.error("Registration Error:", e);
-            return { success: false, message: 'حدث خطأ أثناء التسجيل. يرجى المحاولة لاحقاً.' };
-        }
+    createSession(student) {
+        const authRecord = DATA_STORE.AUTH_DB[student.name];
+        const session = {
+            ...student,
+            ...authRecord, // Includes XP, progress
+            role: 'student',
+            lastLogin: new Date()
+        };
+        this.store.setUser(session);
+        return { success: true, user: session };
     }
 
     /**
@@ -109,10 +149,10 @@ export class Auth {
 
     // --- Helpers ---
 
-    /**
-     * Advanced Arabic Fuzzy Search
-     * Normalizes Alif, Teh Marbuta, Yaa to match roster names strictly but forgivingly.
-     */
+    normalizeAnswer(str) {
+        return str.trim().toLowerCase().replace(/\s+/g, ' ');
+    }
+
     findStudentInRoster(inputName) {
         if (!inputName) return null;
 

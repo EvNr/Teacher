@@ -94,6 +94,17 @@ export class ChatSystem {
         return msg;
     }
 
+    setMOTD(title, message, active) {
+        fetch('api/chat_write.php', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                type: 'MOTD',
+                payload: { title, message, active, date: new Date().toISOString() }
+            })
+        });
+    }
+
     filterProfanity(text) {
         const badWords = ['badword', 'stupid', 'ghabi', 'kalb', 'hmar', 'كلب', 'حمار', 'غبي'];
         let cleanText = text;

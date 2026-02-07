@@ -7,6 +7,7 @@ export class LoginView {
         this.auth = new Auth();
         this.app = document.getElementById('app');
         this.clicks = 0; // Teacher secret
+        this.tempStudent = null; // Store student data between steps
         this.render();
     }
 
@@ -31,84 +32,103 @@ export class LoginView {
                 <div class="split-right">
                     <div class="glass-card" style="width:100%; max-width:450px; border:none; box-shadow:none; background:transparent;">
 
-                        <!-- TABS -->
-                        <div style="display:flex; gap:1rem; margin-bottom:2rem; border-bottom:2px solid rgba(0,0,0,0.05); padding-bottom:10px;">
-                            <button id="tabLogin" class="btn btn-outline active" style="flex:1; border:none; border-bottom:3px solid var(--vision-emerald); border-radius:0;">دخول الطالبة</button>
-                            <button id="tabRegister" class="btn btn-outline" style="flex:1; border:none; border-bottom:3px solid transparent; border-radius:0; color:#888;">تسجيل جديد</button>
-                        </div>
+                        <!-- STEP 1: IDENTIFICATION -->
+                        <form id="step1Form" class="auth-form">
+                            <h2 style="margin-bottom:1.5rem; color:var(--vision-emerald);">تسجيل الدخول</h2>
 
-                        <!-- FORMS CONTAINER -->
-                        <div id="formContainer">
-                            <!-- LOGIN FORM -->
-                            <form id="loginForm" class="auth-form">
-                                <h2 style="margin-bottom:1.5rem; color:var(--vision-emerald);">أهلاً بك مجدداً</h2>
+                            <div class="input-group">
+                                <input type="text" id="inputName" class="input-modern" placeholder=" " required>
+                                <label class="input-label">الاسم الثلاثي</label>
+                            </div>
 
-                                <div class="input-group">
-                                    <input type="text" id="loginName" class="input-modern" placeholder=" " required>
-                                    <label class="input-label">الاسم الثلاثي</label>
-                                </div>
+                            <div class="input-group" style="display:flex; gap:10px;">
+                                <select id="inputGrade" class="input-modern" style="flex:1;" required>
+                                    <option value="" disabled selected>الصف</option>
+                                    <option value="10">أول ثانوي (10)</option>
+                                    <option value="11">ثاني ثانوي (11)</option>
+                                    <option value="12">ثالث ثانوي (12)</option>
+                                </select>
+                                <select id="inputSection" class="input-modern" style="flex:1;">
+                                    <option value="" disabled selected>الشعبة</option>
+                                    <option value="A">أ (A)</option>
+                                    <option value="B">ب (B)</option>
+                                </select>
+                            </div>
 
-                                <div class="input-group">
-                                    <input type="password" id="loginPass" class="input-modern" placeholder=" " required>
-                                    <label class="input-label">كلمة المرور / الرمز السري</label>
-                                </div>
+                            <button type="submit" class="btn btn-primary" style="width:100%;">
+                                متابعة
+                            </button>
 
-                                <button type="submit" class="btn btn-primary" style="width:100%;">
-                                    تسجيل الدخول
-                                </button>
+                            <div id="step1Error" style="color:red; margin-top:10px; font-size:0.9rem; text-align:center;"></div>
+                        </form>
 
-                                <div id="loginError" style="color:red; margin-top:10px; font-size:0.9rem; text-align:center;"></div>
-                            </form>
+                        <!-- STEP 2A: SETUP (NEW USER) -->
+                        <form id="setupForm" class="auth-form" style="display:none; animation:fadeIn 0.5s;">
+                            <h2 style="margin-bottom:1rem; color:var(--vision-gold);">تفعيل الحساب</h2>
+                            <p style="color:#666; font-size:0.9rem; margin-bottom:1.5rem;">
+                                أهلاً بك! بما أن هذه أول زيارة لك، يرجى تعيين سؤال سري لحماية حسابك.
+                            </p>
 
-                            <!-- REGISTER FORM (Hidden by default) -->
-                            <form id="registerForm" class="auth-form" style="display:none;">
-                                <h2 style="margin-bottom:1.5rem; color:var(--vision-gold-light);">إنشاء حساب جديد</h2>
-                                <p style="font-size:0.85rem; color:#666; margin-bottom:1.5rem;">يرجى إدخال بياناتك المطابقة لسجلات المدرسة.</p>
+                            <div class="input-group">
+                                <select id="setupQuestionSelect" class="input-modern" required>
+                                    <option value="" disabled selected>اختر سؤالاً سرياً...</option>
+                                    <option value="friend">ما هو اسم أعز صديقة لك؟</option>
+                                    <option value="color">ما هو لونك المفضل؟</option>
+                                    <option value="hobby">ما هي هوايتك المفضلة؟</option>
+                                    <option value="custom">سؤال خاص...</option>
+                                </select>
+                            </div>
 
-                                <div class="input-group">
-                                    <input type="text" id="regName" class="input-modern" placeholder=" " required>
-                                    <label class="input-label">الاسم الثلاثي</label>
-                                </div>
+                            <div class="input-group" id="customQuestionGroup" style="display:none;">
+                                <input type="text" id="setupCustomQuestion" class="input-modern" placeholder=" " >
+                                <label class="input-label">اكتب سؤالك الخاص</label>
+                            </div>
 
-                                <div class="input-group" style="display:flex; gap:10px;">
-                                    <select id="regGrade" class="input-modern" style="flex:1;" required>
-                                        <option value="" disabled selected>الصف</option>
-                                        <option value="10">أول ثانوي (10)</option>
-                                        <option value="11">ثاني ثانوي (11)</option>
-                                        <option value="12">ثالث ثانوي (12)</option>
-                                    </select>
-                                    <select id="regSection" class="input-modern" style="flex:1;">
-                                        <option value="" disabled selected>الشعبة</option>
-                                        <option value="A">أ (A)</option>
-                                        <option value="B">ب (B)</option>
-                                    </select>
-                                </div>
+                            <div class="input-group">
+                                <input type="text" id="setupAnswer" class="input-modern" placeholder=" " required>
+                                <label class="input-label">الإجابة</label>
+                            </div>
 
-                                <div class="input-group">
-                                    <input type="password" id="regPass" class="input-modern" placeholder=" " required>
-                                    <label class="input-label">إنشاء كلمة مرور</label>
-                                </div>
+                            <button type="submit" class="btn btn-gold" style="width:100%;">
+                                حفظ ودخول
+                            </button>
+                            <button type="button" class="btn btn-outline" id="backToStep1_A" style="width:100%; margin-top:10px;">عودة</button>
+                        </form>
 
-                                <button type="submit" class="btn btn-gold" style="width:100%;">
-                                    تفعيل الحساب
-                                </button>
+                        <!-- STEP 2B: CHALLENGE (EXISTING USER) -->
+                        <form id="challengeForm" class="auth-form" style="display:none; animation:fadeIn 0.5s;">
+                            <h2 style="margin-bottom:1rem; color:var(--vision-emerald);">أهلاً بك مجدداً</h2>
 
-                                <div id="regError" style="color:red; margin-top:10px; font-size:0.9rem; text-align:center;"></div>
-                            </form>
+                            <div style="background:rgba(0,108,53,0.05); padding:15px; border-radius:10px; margin-bottom:1.5rem; text-align:center;">
+                                <p style="font-size:0.85rem; color:#666; margin-bottom:5px;">السؤال السري:</p>
+                                <h4 id="displayQuestion" style="color:var(--vision-emerald);">...</h4>
+                            </div>
 
-                            <!-- TEACHER LOGIN (Hidden) -->
-                            <form id="teacherForm" class="auth-form" style="display:none; border:2px solid var(--vision-emerald); padding:20px; border-radius:15px; background:rgba(0,108,53,0.05);">
-                                <h3 style="color:var(--vision-emerald); text-align:center; margin-bottom:1rem;">بوابة المعلم</h3>
-                                <div class="input-group">
-                                    <input type="email" id="tEmail" class="input-modern" placeholder="البريد الإلكتروني" required>
-                                </div>
-                                <div class="input-group">
-                                    <input type="password" id="tPass" class="input-modern" placeholder="كلمة المرور" required>
-                                </div>
-                                <button type="submit" class="btn btn-primary" style="width:100%;">دخول المعلم</button>
-                                <div id="tError" style="color:red; margin-top:5px; text-align:center;"></div>
-                            </form>
-                        </div>
+                            <div class="input-group">
+                                <input type="text" id="challengeAnswer" class="input-modern" placeholder=" " required autocomplete="off">
+                                <label class="input-label">الإجابة</label>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" style="width:100%;">
+                                تسجيل الدخول
+                            </button>
+                            <button type="button" class="btn btn-outline" id="backToStep1_B" style="width:100%; margin-top:10px;">عودة</button>
+                            <div id="challengeError" style="color:red; margin-top:10px; font-size:0.9rem; text-align:center;"></div>
+                        </form>
+
+                        <!-- TEACHER LOGIN (Hidden) -->
+                        <form id="teacherForm" class="auth-form" style="display:none; border:2px solid var(--vision-emerald); padding:20px; border-radius:15px; background:rgba(0,108,53,0.05);">
+                            <h3 style="color:var(--vision-emerald); text-align:center; margin-bottom:1rem;">بوابة المعلم</h3>
+                            <div class="input-group">
+                                <input type="email" id="tEmail" class="input-modern" placeholder="البريد الإلكتروني" required>
+                            </div>
+                            <div class="input-group">
+                                <input type="password" id="tPass" class="input-modern" placeholder="كلمة المرور" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary" style="width:100%;">دخول المعلم</button>
+                            <button type="button" class="btn btn-outline" id="cancelTeacher" style="width:100%; margin-top:10px;">إلغاء</button>
+                            <div id="tError" style="color:red; margin-top:5px; text-align:center;"></div>
+                        </form>
 
                         <div style="margin-top:2rem; text-align:center; font-size:0.8rem; color:#aaa;">
                             ${BRAND.copyright}
@@ -122,143 +142,148 @@ export class LoginView {
     }
 
     attachEvents() {
-        const logo = document.querySelector('.logo-trigger');
+        // Elements
+        const step1Form = document.getElementById('step1Form');
+        const setupForm = document.getElementById('setupForm');
+        const challengeForm = document.getElementById('challengeForm');
         const teacherForm = document.getElementById('teacherForm');
-        const loginForm = document.getElementById('loginForm');
-        const registerForm = document.getElementById('registerForm');
 
-        // Teacher Secret Trigger
+        // --- Teacher Trigger ---
+        const logo = document.querySelector('.logo-trigger');
         logo.addEventListener('click', () => {
             this.clicks++;
             if (this.clicks === 5) {
-                loginForm.style.display = 'none';
-                registerForm.style.display = 'none';
+                [step1Form, setupForm, challengeForm].forEach(f => f.style.display = 'none');
                 teacherForm.style.display = 'block';
-                // Reset tabs
-                document.getElementById('tabLogin').classList.remove('active', 'btn-outline');
-                document.getElementById('tabRegister').classList.remove('active');
             }
         });
 
-        // Tabs
-        const tabLogin = document.getElementById('tabLogin');
-        const tabRegister = document.getElementById('tabRegister');
-
-        tabLogin.addEventListener('click', () => {
-            loginForm.style.display = 'block';
-            registerForm.style.display = 'none';
+        document.getElementById('cancelTeacher').addEventListener('click', () => {
             teacherForm.style.display = 'none';
-
-            tabLogin.style.borderBottomColor = 'var(--vision-emerald)';
-            tabLogin.style.color = 'var(--vision-emerald)';
-            tabRegister.style.borderBottomColor = 'transparent';
-            tabRegister.style.color = '#888';
+            step1Form.style.display = 'block';
+            this.clicks = 0;
         });
 
-        tabRegister.addEventListener('click', () => {
-            registerForm.style.display = 'block';
-            loginForm.style.display = 'none';
-            teacherForm.style.display = 'none';
+        // --- Step 1: Identification ---
+        const inputGrade = document.getElementById('inputGrade');
+        const inputSection = document.getElementById('inputSection');
 
-            tabRegister.style.borderBottomColor = 'var(--vision-gold)';
-            tabRegister.style.color = 'var(--vision-gold)';
-            tabLogin.style.borderBottomColor = 'transparent';
-            tabLogin.style.color = '#888';
-        });
-
-        // Grade 10 Logic (Disable Section)
-        const regGrade = document.getElementById('regGrade');
-        const regSection = document.getElementById('regSection');
-        regGrade.addEventListener('change', (e) => {
+        inputGrade.addEventListener('change', (e) => {
             if (e.target.value === '10') {
-                regSection.value = '';
-                regSection.disabled = true;
-                regSection.style.opacity = '0.5';
+                inputSection.value = '';
+                inputSection.disabled = true;
+                inputSection.style.opacity = '0.5';
             } else {
-                regSection.disabled = false;
-                regSection.style.opacity = '1';
+                inputSection.disabled = false;
+                inputSection.style.opacity = '1';
             }
         });
 
-        // Submit Login
-        loginForm.addEventListener('submit', async (e) => {
+        step1Form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const btn = loginForm.querySelector('button');
+            const btn = step1Form.querySelector('button');
             const originalText = btn.textContent;
+            btn.textContent = 'جاري التحقق...';
+            btn.disabled = true;
+
+            const name = document.getElementById('inputName').value;
+            const grade = document.getElementById('inputGrade').value;
+            const section = document.getElementById('inputSection').value || null;
 
             try {
-                btn.textContent = 'جاري التحقق...';
-                btn.disabled = true;
+                const result = await this.auth.checkUserStatus(name, grade, section);
 
-                const name = document.getElementById('loginName').value;
-                const pass = document.getElementById('loginPass').value;
-
-                const result = await this.auth.login(name, pass, 'student');
-
-                if (result.success) {
-                    window.location.hash = '#dashboard';
-                } else {
-                    document.getElementById('loginError').textContent = result.message;
-                    btn.textContent = originalText;
-                    btn.disabled = false;
+                if (result.status === 'NOT_FOUND' || result.status === 'ERROR') {
+                    document.getElementById('step1Error').textContent = result.message;
                 }
-            } catch (error) {
-                console.error("Login Error:", error);
-                document.getElementById('loginError').textContent = 'حدث خطأ غير متوقع';
+                else if (result.status === 'NEW_USER') {
+                    this.tempStudent = result.student;
+                    step1Form.style.display = 'none';
+                    setupForm.style.display = 'block';
+                }
+                else if (result.status === 'EXISTING_USER') {
+                    this.tempStudent = result.student;
+                    // Handle stored question ID vs text
+                    let qText = result.question;
+                    const map = { 'friend': 'ما هو اسم أعز صديقة لك؟', 'color': 'ما هو لونك المفضل؟', 'hobby': 'ما هي هوايتك المفضلة؟' };
+                    if (map[qText]) qText = map[qText];
+
+                    document.getElementById('displayQuestion').textContent = qText;
+                    step1Form.style.display = 'none';
+                    challengeForm.style.display = 'block';
+                }
+            } catch (err) {
+                console.error(err);
+                document.getElementById('step1Error').textContent = 'حدث خطأ في النظام';
+            } finally {
                 btn.textContent = originalText;
                 btn.disabled = false;
             }
         });
 
-        // Submit Register
-        registerForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = registerForm.querySelector('button');
-            const originalText = btn.textContent;
+        // --- Step 2A: Setup ---
+        const qSelect = document.getElementById('setupQuestionSelect');
+        const qCustomGroup = document.getElementById('customQuestionGroup');
+        const qCustomInput = document.getElementById('setupCustomQuestion');
 
-            try {
-                btn.textContent = 'جاري الإنشاء...';
-                btn.disabled = true;
-
-                const name = document.getElementById('regName').value;
-                const grade = document.getElementById('regGrade').value;
-                const section = document.getElementById('regSection').value || null; // Grade 10 is null
-                const pass = document.getElementById('regPass').value;
-
-                const result = await this.auth.register(name, grade, section, pass);
-
-                if (result.success) {
-                    // Should auto login
-                    window.location.hash = '#dashboard';
-                } else {
-                    document.getElementById('regError').textContent = result.message;
-                    btn.textContent = originalText;
-                    btn.disabled = false;
-                }
-            } catch (error) {
-                console.error("Register Error:", error);
-                document.getElementById('regError').textContent = 'حدث خطأ أثناء التسجيل';
-                btn.textContent = originalText;
-                btn.disabled = false;
+        qSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'custom') {
+                qCustomGroup.style.display = 'block';
+                qCustomInput.required = true;
+            } else {
+                qCustomGroup.style.display = 'none';
+                qCustomInput.required = false;
             }
         });
 
-        // Teacher Login
+        setupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const qVal = qSelect.value;
+            const question = qVal === 'custom' ? qCustomInput.value : qVal;
+            const answer = document.getElementById('setupAnswer').value;
+
+            const result = await this.auth.setupAccount(this.tempStudent, question, answer);
+            if (result.success) {
+                window.location.hash = '#dashboard';
+            } else {
+                alert(result.message);
+            }
+        });
+
+        document.getElementById('backToStep1_A').addEventListener('click', () => {
+            setupForm.style.display = 'none';
+            step1Form.style.display = 'block';
+        });
+
+        // --- Step 2B: Challenge ---
+        challengeForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const answer = document.getElementById('challengeAnswer').value;
+
+            const result = await this.auth.loginWithAnswer(this.tempStudent, answer);
+            if (result.success) {
+                window.location.hash = '#dashboard';
+            } else {
+                document.getElementById('challengeError').textContent = result.message;
+            }
+        });
+
+        document.getElementById('backToStep1_B').addEventListener('click', () => {
+            challengeForm.style.display = 'none';
+            step1Form.style.display = 'block';
+        });
+
+        // --- Teacher Login ---
         teacherForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('tEmail').value;
             const pass = document.getElementById('tPass').value;
 
-            try {
-                const result = await this.auth.login(email, pass, 'teacher');
-                if (result.success) {
-                    window.location.hash = '#teacher';
-                } else {
-                    document.getElementById('tError').textContent = 'بيانات المعلم غير صحيحة';
-                }
-            } catch (error) {
-                console.error("Teacher Login Error:", error);
-                document.getElementById('tError').textContent = 'خطأ في النظام';
+            const result = await this.auth.loginTeacher(email, pass);
+            if (result.success) {
+                window.location.hash = '#teacher';
+            } else {
+                document.getElementById('tError').textContent = 'بيانات المعلم غير صحيحة';
             }
         });
     }
