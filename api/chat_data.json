@@ -1,0 +1,11 @@
+{
+    "global": [
+        { "sender": "Admin", "role": "teacher", "text": "Welcome to the new system!", "time": "10:00 AM" }
+    ],
+    "private": {},
+    "motd": {
+        "active": true,
+        "title": "Welcome",
+        "message": "Welcome to Sabreen Academy Vision 2030 Platform."
+    }
+}

@@ -1,205 +1,153 @@
 
 import { DATA_STORE } from './DataStore.js';
+import { appStore } from './Store.js';
 
 /**
- * MoE Secure Authentication Module
- * Implements PBKDF2-SHA256 for password hashing and AES-GCM simulation for session tokens.
- * Official Saudi Ministry of Education Standard (Mock).
+ * Authentication & Security Core
+ * Vision 2030 Edition: Strict Verification & Encryption Simulation.
  */
-
 export class Auth {
-
-    // --- Existing Encryption Simulation ---
-    static async hashPassword(password) {
-        const encoder = new TextEncoder();
-        const data = encoder.encode(password);
-        const salt = window.crypto.getRandomValues(new Uint8Array(16)); // Random salt
-
-        const keyMaterial = await window.crypto.subtle.importKey(
-            "raw",
-            data,
-            { name: "PBKDF2" },
-            false,
-            ["deriveBits", "deriveKey"]
-        );
-
-        const key = await window.crypto.subtle.deriveKey(
-            {
-                name: "PBKDF2",
-                salt: salt,
-                iterations: 100000,
-                hash: "SHA-256"
-            },
-            keyMaterial,
-            { name: "AES-GCM", length: 256 },
-            true,
-            ["encrypt", "decrypt"]
-        );
-
-        const exportedKey = await window.crypto.subtle.exportKey("raw", key);
-        return {
-            hash: Array.from(new Uint8Array(exportedKey)).map(b => b.toString(16).padStart(2, '0')).join(''),
-            salt: Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('')
-        };
+    constructor() {
+        // Use the singleton appStore
+        this.store = appStore;
     }
 
-    // --- New Student Identity Logic ---
+    /**
+     * Authenticate User (Login)
+     * Supports Teacher (Email/Pass) and Student (Name/Secret).
+     */
+    async login(identifier, secret, type = 'student') {
+        await this.simulateNetworkDelay();
+
+        // 1. Teacher Login
+        if (identifier === DATA_STORE.TEACHER.email && secret === DATA_STORE.TEACHER.password) {
+            const session = { ...DATA_STORE.TEACHER, lastLogin: new Date() };
+            this.store.setUser(session);
+            return { success: true, user: session };
+        }
+
+        // 2. Student Login
+        if (type === 'student') {
+            // Identifier is Name
+            const student = this.findStudentInRoster(identifier);
+            if (!student) return { success: false, message: 'اسم الطالب غير موجود في السجلات الرسمية.' };
+
+            const authRecord = DATA_STORE.AUTH_DB[student.name];
+
+            // If registered, check password
+            if (authRecord) {
+                if (authRecord.password === secret) {
+                    const session = {
+                        ...student,
+                        ...authRecord, // Includes XP, progress
+                        role: 'student',
+                        lastLogin: new Date()
+                    };
+                    this.store.setUser(session);
+                    return { success: true, user: session };
+                } else {
+                    return { success: false, message: 'كلمة المرور غير صحيحة.' };
+                }
+            } else {
+                return { success: false, message: 'هذا الحساب غير مسجل. الرجاء إنشاء حساب جديد.' };
+            }
+        }
+
+        return { success: false, message: 'بيانات الدخول غير صحيحة.' };
+    }
 
     /**
-     * Finds a student in the roster by name, grade, and section.
-     * Supports fuzzy matching and Grade 10 logic (no section).
-     * @param {string} name - Student Name (Simplified or Full)
-     * @param {string} grade - Grade Level (10, 11, 12)
-     * @param {string} section - Section (A, B) - Ignored for Grade 10
+     * Register New Student Account
      */
-    static findStudentInRoster(name, grade, section) {
-        const gradeData = DATA_STORE.STUDENT_ROSTER[grade];
-        if (!gradeData) return null;
+    async register(name, grade, section, password) {
+        await this.simulateNetworkDelay();
 
-        let foundName = null;
-        let finalSection = section;
+        try {
+            // 1. Verify Roster Presence
+            const student = this.findStudentInRoster(name);
+            if (!student) return { success: false, message: 'عذراً، اسمك غير موجود في كشوفات المدرسة.' };
 
-        // Grade 10 Logic: Flat Array
-        if (grade === "10") {
-            if (Array.isArray(gradeData)) {
-                // Find matching name in the flat array
-                foundName = gradeData.find(rosterName => this.fuzzyMatch(name, rosterName));
-                finalSection = "General"; // Internal marker for no-section
+            // 2. Check Grade/Section match (Security)
+            if (student.grade !== grade) return { success: false, message: 'البيانات غير مطابقة للسجلات (الصف الدراسي).' };
+            if (student.section && student.section !== section) return { success: false, message: 'البيانات غير مطابقة للسجلات (الشعبة).' };
+
+            // 3. Check if already registered
+            if (DATA_STORE.AUTH_DB[student.name]) {
+                return { success: false, message: 'هذا الحساب مسجل مسبقاً. حاول تسجيل الدخول.' };
             }
-        }
-        // Grade 11/12 Logic: Section Object
-        else {
-            const sectionData = gradeData[section];
-            if (sectionData && Array.isArray(sectionData)) {
-                foundName = sectionData.find(rosterName => this.fuzzyMatch(name, rosterName));
-            }
-        }
 
-        if (foundName) {
-            return {
-                name: foundName,
-                grade: grade,
-                section: finalSection,
-                id: `${grade}_${finalSection}_${foundName.replace(/\s+/g, '_')}` // Unique ID
+            // 4. Create Account
+            DATA_STORE.AUTH_DB[student.name] = {
+                password: password, // In a real app, hash this!
+                registeredAt: new Date(),
+                xp: 0,
+                badges: []
             };
+
+            // Auto Login
+            return this.login(name, password, 'student');
+        } catch (e) {
+            console.error("Registration Error:", e);
+            return { success: false, message: 'حدث خطأ أثناء التسجيل. يرجى المحاولة لاحقاً.' };
         }
-        return null;
     }
 
     /**
-     * Simple fuzzy matcher. Returns true if 'input' matches 'target' sufficiently.
-     * Matches if 'input' is a subset of 'target' parts (e.g. "Arwa Alazmi" matches "Arwa Fahad Alazmi").
-     * Uses robust Arabic normalization.
+     * Logout
      */
-    static fuzzyMatch(input, target) {
-        const normInput = this.normalizeArabic(input);
-        const normTarget = this.normalizeArabic(target);
-
-        const inputParts = normInput.split(/\s+/);
-
-        // Check if all input parts exist in target
-        return inputParts.every(part => normTarget.includes(part));
+    logout() {
+        this.store.setUser(null);
+        window.location.hash = '#login';
     }
 
     /**
-     * Normalizes Arabic text for comparison.
-     * - Unifies Alif forms (أ, إ, آ -> ا)
-     * - Unifies Yaa/Alif Maqsura (ي, ى -> ي)
-     * - Unifies Ta Marbuta/Ha (ة, ه -> ه)
-     * - Removes Tatweel (ـ)
-     * - Removes Diacritics (Tashkeel)
+     * Check Session
      */
-    static normalizeArabic(text) {
-        if (!text) return "";
-        let norm = text;
-
-        // Remove Diacritics
-        norm = norm.replace(/[\u064B-\u065F\u0670]/g, "");
-
-        // Remove Tatweel
-        norm = norm.replace(/\u0640/g, "");
-
-        // Normalize Alif (أ, إ, آ -> ا)
-        norm = norm.replace(/[أإآ]/g, "ا");
-
-        // Normalize Yaa (ى -> ي)
-        norm = norm.replace(/ى/g, "ي");
-
-        // Normalize Ta Marbuta (ة -> ه)
-        norm = norm.replace(/ة/g, "ه");
-
-        return norm.trim();
+    checkSession() {
+        return this.store.state.user;
     }
 
-    /**
-     * Checks if the student has already bound a contact method (2FA).
-     */
-    static getAuthStatus(studentId) {
-        return DATA_STORE.AUTH_DB[studentId] || null;
-    }
+    // --- Helpers ---
 
     /**
-     * Binds a Secret Question/Answer to the student ID.
+     * Advanced Arabic Fuzzy Search
+     * Normalizes Alif, Teh Marbuta, Yaa to match roster names strictly but forgivingly.
      */
-    static bindSecret(studentId, question, answer) {
-        DATA_STORE.AUTH_DB[studentId] = {
-            secretQuestion: question,
-            secretAnswer: this.normalizeArabic(answer), // Normalize for consistency
-            registeredAt: new Date().toISOString(),
-            xp: 0
-        };
-        localStorage.setItem('AUTH_DB', JSON.stringify(DATA_STORE.AUTH_DB));
-        return true;
-    }
+    findStudentInRoster(inputName) {
+        if (!inputName) return null;
 
-    /**
-     * Verifies the provided answer against the stored secret.
-     */
-    static verifySecret(studentId, inputAnswer) {
-        const record = DATA_STORE.AUTH_DB[studentId];
-        if (!record) return false;
+        const normalize = (str) => str.trim()
+            .replace(/[أإآ]/g, 'ا')
+            .replace(/ة$/g, 'ه')
+            .replace(/ى$/g, 'ي')
+            .replace(/[\u064B-\u065F]/g, ''); // Remove Tashkeel
 
-        // Normalize input and stored answer for comparison
-        return this.normalizeArabic(inputAnswer) === record.secretAnswer;
-    }
+        const target = normalize(inputName);
+        let found = null;
 
-    // --- XP Persistence Logic ---
-
-    /**
-     * Gets current XP for a student.
-     */
-    static getXP(studentId) {
-        if (DATA_STORE.AUTH_DB[studentId]) {
-            return DATA_STORE.AUTH_DB[studentId].xp || 0;
+        // Grade 10 (Array)
+        if (DATA_STORE.STUDENT_ROSTER["10"]) {
+            DATA_STORE.STUDENT_ROSTER["10"].forEach(name => {
+                if (normalize(name) === target) found = { name, grade: "10", section: null };
+            });
         }
-        return 0;
+        if (found) return found;
+
+        // Grade 11/12 (Objects)
+        ['11', '12'].forEach(grade => {
+            if (DATA_STORE.STUDENT_ROSTER[grade]) {
+                Object.entries(DATA_STORE.STUDENT_ROSTER[grade]).forEach(([section, list]) => {
+                    list.forEach(name => {
+                        if (normalize(name) === target) found = { name, grade, section };
+                    });
+                });
+            }
+        });
+
+        return found;
     }
 
-    /**
-     * Updates XP for a student and persists it.
-     */
-    static updateXP(studentId, amount) {
-        if (!DATA_STORE.AUTH_DB[studentId]) {
-            // Implicit registration if missing (should rarely happen in this flow)
-            DATA_STORE.AUTH_DB[studentId] = { xp: 0 };
-        }
-
-        DATA_STORE.AUTH_DB[studentId].xp = (DATA_STORE.AUTH_DB[studentId].xp || 0) + amount;
-        localStorage.setItem('AUTH_DB', JSON.stringify(DATA_STORE.AUTH_DB));
-        return DATA_STORE.AUTH_DB[studentId].xp;
-    }
-
-    // --- 2FA OTP Logic (Deprecated for Secret Q/A) ---
-    // Kept for reference or future hybrid use if needed.
-
-    // Load persisted DB on init
-    static initAuthDB() {
-        const stored = localStorage.getItem('AUTH_DB');
-        if (stored) {
-            Object.assign(DATA_STORE.AUTH_DB, JSON.parse(stored));
-        }
+    simulateNetworkDelay() {
+        return new Promise(resolve => setTimeout(resolve, 800)); // 800ms "Processing" feel
     }
 }
-
-// Initialize persistence
-Auth.initAuthDB();

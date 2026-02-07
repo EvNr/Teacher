@@ -1,48 +1,118 @@
 
-import { Auth } from '../core/Auth.js';
-import { appStore } from '../core/Store.js';
-import { DATA_STORE } from '../core/DataStore.js';
-import { Router } from '../core/Router.js';
 import { BRAND } from '../core/Brand.js';
+import { Auth } from '../core/Auth.js';
 
 export class LoginView {
-    constructor(container) {
-        this.container = container;
-        this.state = 'IDENTIFY';
-        this.tempUser = null;
-        this.secretClicks = 0;
-        this.secretTimer = null;
+    constructor() {
+        this.auth = new Auth();
+        this.app = document.getElementById('app');
+        this.clicks = 0; // Teacher secret
         this.render();
     }
 
     render() {
-        // Luxury Layout
-        this.container.innerHTML = `
-            <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(197,160,89,0.1) 0%, transparent 70%);">
-                <div class="expert-card fade-in" style="width: 100%; max-width: 500px; text-align: center; border-color: var(--gilded-gold);">
-
-                    <div id="brandLogo" style="margin-bottom: 2rem; display:flex; justify-content:center; cursor:pointer; transition: transform 0.2s;">
-                        <!-- Styled Logo Placeholder for SVG -->
-                        <svg width="100" height="100" viewBox="0 0 100 100">
-                           <circle cx="50" cy="50" r="45" stroke="#c5a059" stroke-width="2" fill="none" />
-                           <text x="50" y="55" font-family="Tajawal" font-size="40" text-anchor="middle" fill="#c5a059" font-weight="bold">ص</text>
-                        </svg>
+        this.app.innerHTML = `
+            <div class="split-screen">
+                <!-- LEFT: ART & BRANDING -->
+                <div class="split-left">
+                    <div style="position:relative; z-index:2; text-align:center; padding:2rem;">
+                        <div class="logo-trigger" style="margin-bottom:2rem; cursor:pointer;">
+                            ${BRAND.logoSvg.replace('width="60"', 'width="120"').replace('height="60"', 'height="120"')}
+                        </div>
+                        <h1 style="font-family:'Cairo'; font-weight:800; font-size:2.5rem; margin-bottom:1rem;">${BRAND.nameAr}</h1>
+                        <p style="font-size:1.1rem; opacity:0.9; max-width:400px; margin:0 auto; line-height:1.6;">
+                            منصة تعليمية ذكية تواكب تطلعات جيل الرؤية.
+                            <br>نسعى لبناء عقول مفكرة، مبدعة، ومتميزة.
+                        </p>
                     </div>
+                </div>
 
-                    <h2 class="font-heading text-gold" style="font-size: 2rem; margin-bottom: 0.5rem;">${BRAND.nameAr}</h2>
-                    <p class="text-grey" style="margin-bottom: 2.5rem; letter-spacing: 1px;">بوابة التميز الأكاديمي</p>
+                <!-- RIGHT: FORM -->
+                <div class="split-right">
+                    <div class="glass-card" style="width:100%; max-width:450px; border:none; box-shadow:none; background:transparent;">
 
-                    <form id="loginForm">
-                        ${this.renderCurrentState()}
+                        <!-- TABS -->
+                        <div style="display:flex; gap:1rem; margin-bottom:2rem; border-bottom:2px solid rgba(0,0,0,0.05); padding-bottom:10px;">
+                            <button id="tabLogin" class="btn btn-outline active" style="flex:1; border:none; border-bottom:3px solid var(--vision-emerald); border-radius:0;">دخول الطالبة</button>
+                            <button id="tabRegister" class="btn btn-outline" style="flex:1; border:none; border-bottom:3px solid transparent; border-radius:0; color:#888;">تسجيل جديد</button>
+                        </div>
 
-                        <div id="security-log" style="text-align:right; font-size:0.8rem; color:var(--gilded-light); margin-bottom:1.5rem; min-height:20px; font-family:monospace;"></div>
+                        <!-- FORMS CONTAINER -->
+                        <div id="formContainer">
+                            <!-- LOGIN FORM -->
+                            <form id="loginForm" class="auth-form">
+                                <h2 style="margin-bottom:1.5rem; color:var(--vision-emerald);">أهلاً بك مجدداً</h2>
 
-                        <button type="submit" class="btn-gold" style="width:100%">${this.getButtonText()}</button>
-                        ${this.state !== 'IDENTIFY' ? '<button type="button" id="backBtn" class="btn-outline-gold" style="width:100%; margin-top:15px;">العودة</button>' : ''}
-                    </form>
+                                <div class="input-group">
+                                    <input type="text" id="loginName" class="input-modern" placeholder=" " required>
+                                    <label class="input-label">الاسم الثلاثي</label>
+                                </div>
 
-                    <div style="margin-top:3rem; border-top:1px solid rgba(255,255,255,0.05); padding-top:1.5rem; font-size:0.75rem; color:#666;">
-                        <span style="border:1px solid var(--gilded-dark); padding: 3px 8px; border-radius: 4px; color: var(--gilded-dark);">SECURE 2FA</span>
+                                <div class="input-group">
+                                    <input type="password" id="loginPass" class="input-modern" placeholder=" " required>
+                                    <label class="input-label">كلمة المرور / الرمز السري</label>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary" style="width:100%;">
+                                    تسجيل الدخول
+                                </button>
+
+                                <div id="loginError" style="color:red; margin-top:10px; font-size:0.9rem; text-align:center;"></div>
+                            </form>
+
+                            <!-- REGISTER FORM (Hidden by default) -->
+                            <form id="registerForm" class="auth-form" style="display:none;">
+                                <h2 style="margin-bottom:1.5rem; color:var(--vision-gold-light);">إنشاء حساب جديد</h2>
+                                <p style="font-size:0.85rem; color:#666; margin-bottom:1.5rem;">يرجى إدخال بياناتك المطابقة لسجلات المدرسة.</p>
+
+                                <div class="input-group">
+                                    <input type="text" id="regName" class="input-modern" placeholder=" " required>
+                                    <label class="input-label">الاسم الثلاثي</label>
+                                </div>
+
+                                <div class="input-group" style="display:flex; gap:10px;">
+                                    <select id="regGrade" class="input-modern" style="flex:1;" required>
+                                        <option value="" disabled selected>الصف</option>
+                                        <option value="10">أول ثانوي (10)</option>
+                                        <option value="11">ثاني ثانوي (11)</option>
+                                        <option value="12">ثالث ثانوي (12)</option>
+                                    </select>
+                                    <select id="regSection" class="input-modern" style="flex:1;">
+                                        <option value="" disabled selected>الشعبة</option>
+                                        <option value="A">أ (A)</option>
+                                        <option value="B">ب (B)</option>
+                                    </select>
+                                </div>
+
+                                <div class="input-group">
+                                    <input type="password" id="regPass" class="input-modern" placeholder=" " required>
+                                    <label class="input-label">إنشاء كلمة مرور</label>
+                                </div>
+
+                                <button type="submit" class="btn btn-gold" style="width:100%;">
+                                    تفعيل الحساب
+                                </button>
+
+                                <div id="regError" style="color:red; margin-top:10px; font-size:0.9rem; text-align:center;"></div>
+                            </form>
+
+                            <!-- TEACHER LOGIN (Hidden) -->
+                            <form id="teacherForm" class="auth-form" style="display:none; border:2px solid var(--vision-emerald); padding:20px; border-radius:15px; background:rgba(0,108,53,0.05);">
+                                <h3 style="color:var(--vision-emerald); text-align:center; margin-bottom:1rem;">بوابة المعلم</h3>
+                                <div class="input-group">
+                                    <input type="email" id="tEmail" class="input-modern" placeholder="البريد الإلكتروني" required>
+                                </div>
+                                <div class="input-group">
+                                    <input type="password" id="tPass" class="input-modern" placeholder="كلمة المرور" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary" style="width:100%;">دخول المعلم</button>
+                                <div id="tError" style="color:red; margin-top:5px; text-align:center;"></div>
+                            </form>
+                        </div>
+
+                        <div style="margin-top:2rem; text-align:center; font-size:0.8rem; color:#aaa;">
+                            ${BRAND.copyright}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -51,185 +121,144 @@ export class LoginView {
         this.attachEvents();
     }
 
-    renderCurrentState() {
-        if (this.state === 'IDENTIFY') {
-            return `
-                <div class="expert-input-group slide-up">
-                    <label>اسم الطالبة</label>
-                    <input type="text" id="fullName" class="expert-input" required placeholder="الاسم الثلاثي..." autocomplete="off">
-                </div>
-                <div class="slide-up" style="display:flex; gap:15px; animation-delay: 0.1s;">
-                    <div class="expert-input-group" style="flex:1">
-                        <label>الصف الدراسي</label>
-                        <select id="grade" class="expert-input">
-                            <option value="10">أول ثانوي (10)</option>
-                            <option value="11">ثاني ثانوي (11)</option>
-                            <option value="12">ثالث ثانوي (12)</option>
-                        </select>
-                    </div>
-                    <div class="expert-input-group" id="sectionGroup" style="flex:1; display:none;">
-                        <label>الشعبة</label>
-                        <select id="section" class="expert-input">
-                            <option value="A">أ (A)</option>
-                            <option value="B">ب (B)</option>
-                        </select>
-                    </div>
-                </div>
-            `;
-        } else if (this.state === 'TEACHER') {
-            return `
-                 <div class="slide-up" style="background:rgba(197,160,89,0.1); color:var(--gilded-gold); padding:10px; border-radius:8px; margin-bottom:20px; text-align:center;">
-                    بوابة الكادر التعليمي
-                 </div>
-                 <div class="expert-input-group slide-up">
-                    <label>البريد الإلكتروني</label>
-                    <input type="email" id="email" class="expert-input" required dir="ltr">
-                </div>
-                <div class="expert-input-group slide-up" style="animation-delay: 0.1s;">
-                    <label>كلمة المرور</label>
-                    <input type="password" id="password" class="expert-input" required>
-                </div>
-            `;
-        } else if (this.state === 'SETUP_SECRET') {
-            return `
-                <div class="slide-up" style="color:var(--gilded-light); margin-bottom:20px; line-height:1.6;">
-                    مرحباً <strong>${this.tempUser.name}</strong>. لضمان أمان حسابك، يرجى تعيين سؤال سري خاص.
-                </div>
-                <div class="expert-input-group slide-up">
-                    <label>سؤال سري</label>
-                    <input type="text" id="secretQuestion" class="expert-input" required placeholder="مثال: اسم صديقة الطفولة؟">
-                </div>
-                <div class="expert-input-group slide-up" style="animation-delay: 0.1s;">
-                    <label>الإجابة السرية</label>
-                    <input type="text" id="secretAnswer" class="expert-input" required>
-                </div>
-            `;
-        } else if (this.state === 'VERIFY_SECRET') {
-            const authData = Auth.getAuthStatus(this.tempUser.id);
-            return `
-                <div class="slide-up" style="background:rgba(255,255,255,0.05); padding:15px; border-radius:12px; margin-bottom:20px;">
-                    <small class="text-grey">سؤال الأمان:</small><br>
-                    <strong class="text-white" style="font-size:1.1rem;">${authData.secretQuestion}</strong>
-                </div>
-                <div class="expert-input-group slide-up" style="animation-delay: 0.1s;">
-                    <label>إجابتك السرية</label>
-                    <input type="text" id="secretAnswerInput" class="expert-input" required>
-                </div>
-            `;
-        }
-    }
-
-    getButtonText() {
-        if (this.state === 'IDENTIFY') return 'متابعة الدخول';
-        if (this.state === 'TEACHER') return 'تسجيل الدخول';
-        if (this.state === 'SETUP_SECRET') return 'حفظ البيانات';
-        if (this.state === 'VERIFY_SECRET') return 'تحقق ودخول';
-    }
-
     attachEvents() {
-        const form = document.getElementById('loginForm');
-        const log = document.getElementById('security-log');
+        const logo = document.querySelector('.logo-trigger');
+        const teacherForm = document.getElementById('teacherForm');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
 
-        const logo = document.getElementById('brandLogo');
-        if (logo) {
-            logo.addEventListener('click', () => {
-                this.secretClicks++;
-                logo.style.transform = `scale(${1 + (this.secretClicks * 0.1)}) rotate(${this.secretClicks * 10}deg)`;
-                setTimeout(() => logo.style.transform = 'scale(1) rotate(0deg)', 200);
+        // Teacher Secret Trigger
+        logo.addEventListener('click', () => {
+            this.clicks++;
+            if (this.clicks === 5) {
+                loginForm.style.display = 'none';
+                registerForm.style.display = 'none';
+                teacherForm.style.display = 'block';
+                // Reset tabs
+                document.getElementById('tabLogin').classList.remove('active', 'btn-outline');
+                document.getElementById('tabRegister').classList.remove('active');
+            }
+        });
 
-                if (this.secretClicks >= 5) {
-                    this.state = 'TEACHER';
-                    this.secretClicks = 0;
-                    this.render();
-                }
-                clearTimeout(this.secretTimer);
-                this.secretTimer = setTimeout(() => { this.secretClicks = 0; }, 3000);
-            });
-        }
+        // Tabs
+        const tabLogin = document.getElementById('tabLogin');
+        const tabRegister = document.getElementById('tabRegister');
 
-        const backBtn = document.getElementById('backBtn');
-        if (backBtn) {
-            backBtn.addEventListener('click', () => {
-                this.state = 'IDENTIFY';
-                this.tempUser = null;
-                this.render();
-            });
-        }
+        tabLogin.addEventListener('click', () => {
+            loginForm.style.display = 'block';
+            registerForm.style.display = 'none';
+            teacherForm.style.display = 'none';
 
-        const gradeSelect = document.getElementById('grade');
-        const sectionGroup = document.getElementById('sectionGroup');
-        if (gradeSelect && sectionGroup) {
-            gradeSelect.addEventListener('change', () => {
-                sectionGroup.style.display = gradeSelect.value === '10' ? 'none' : 'block';
-            });
-            if (gradeSelect.value === '10') sectionGroup.style.display = 'none';
-        }
+            tabLogin.style.borderBottomColor = 'var(--vision-emerald)';
+            tabLogin.style.color = 'var(--vision-emerald)';
+            tabRegister.style.borderBottomColor = 'transparent';
+            tabRegister.style.color = '#888';
+        });
 
-        form.addEventListener('submit', async (e) => {
+        tabRegister.addEventListener('click', () => {
+            registerForm.style.display = 'block';
+            loginForm.style.display = 'none';
+            teacherForm.style.display = 'none';
+
+            tabRegister.style.borderBottomColor = 'var(--vision-gold)';
+            tabRegister.style.color = 'var(--vision-gold)';
+            tabLogin.style.borderBottomColor = 'transparent';
+            tabLogin.style.color = '#888';
+        });
+
+        // Grade 10 Logic (Disable Section)
+        const regGrade = document.getElementById('regGrade');
+        const regSection = document.getElementById('regSection');
+        regGrade.addEventListener('change', (e) => {
+            if (e.target.value === '10') {
+                regSection.value = '';
+                regSection.disabled = true;
+                regSection.style.opacity = '0.5';
+            } else {
+                regSection.disabled = false;
+                regSection.style.opacity = '1';
+            }
+        });
+
+        // Submit Login
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const btn = form.querySelector('button[type="submit"]');
+            const btn = loginForm.querySelector('button');
             const originalText = btn.textContent;
-            btn.textContent = 'جاري المعالجة...';
-            btn.disabled = true;
 
             try {
-                if (this.state === 'TEACHER') {
-                    const email = document.getElementById('email').value;
-                    const password = document.getElementById('password').value;
-                    if (email === DATA_STORE.TEACHER.email && password === DATA_STORE.TEACHER.password) {
-                        appStore.setUser(DATA_STORE.TEACHER);
-                        Router.navigate('home');
-                    } else throw new Error("بيانات الاعتماد غير صالحة");
+                btn.textContent = 'جاري التحقق...';
+                btn.disabled = true;
 
-                } else if (this.state === 'IDENTIFY') {
-                    const name = document.getElementById('fullName').value.trim();
-                    const grade = document.getElementById('grade').value;
-                    const section = document.getElementById('section').value;
+                const name = document.getElementById('loginName').value;
+                const pass = document.getElementById('loginPass').value;
 
-                    log.textContent = "> Searching Roster DB...";
-                    await new Promise(r => setTimeout(r, 800));
+                const result = await this.auth.login(name, pass, 'student');
 
-                    const student = Auth.findStudentInRoster(name, grade, section);
-                    if (student) {
-                        this.tempUser = student;
-                        const authData = Auth.getAuthStatus(student.id);
-                        this.state = authData ? 'VERIFY_SECRET' : 'SETUP_SECRET';
-                        this.render();
-                    } else throw new Error("لم يتم العثور على الطالبة");
-
-                } else if (this.state === 'SETUP_SECRET') {
-                    const q = document.getElementById('secretQuestion').value.trim();
-                    const a = document.getElementById('secretAnswer').value.trim();
-                    if (q.length < 3 || a.length < 2) throw new Error("البيانات قصيرة جداً");
-
-                    log.textContent = "> Encrypting Secret...";
-                    await new Promise(r => setTimeout(r, 800));
-                    Auth.bindSecret(this.tempUser.id, q, a);
-                    appStore.setUser(this.tempUser);
-                    Router.navigate('home');
-
-                } else if (this.state === 'VERIFY_SECRET') {
-                    const answer = document.getElementById('secretAnswerInput').value.trim();
-                    log.textContent = "> Verifying Token...";
-                    await new Promise(r => setTimeout(r, 800));
-
-                    if (Auth.verifySecret(this.tempUser.id, answer)) {
-                        this.tempUser.xp = Auth.getXP(this.tempUser.id);
-                        appStore.setUser(this.tempUser);
-                        Router.navigate('home');
-                    } else throw new Error("الإجابة غير صحيحة");
+                if (result.success) {
+                    window.location.hash = '#dashboard';
+                } else {
+                    document.getElementById('loginError').textContent = result.message;
+                    btn.textContent = originalText;
+                    btn.disabled = false;
                 }
-            } catch (err) {
-                log.style.color = 'var(--danger-ruby)';
-                log.textContent = `> Error: ${err.message}`;
-                btn.disabled = false;
+            } catch (error) {
+                console.error("Login Error:", error);
+                document.getElementById('loginError').textContent = 'حدث خطأ غير متوقع';
                 btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        });
 
-                // Shake Animation
-                const card = this.container.querySelector('.expert-card');
-                card.style.transform = 'translateX(5px)';
-                setTimeout(() => card.style.transform = 'translateX(-5px)', 50);
-                setTimeout(() => card.style.transform = 'translateX(0)', 100);
+        // Submit Register
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = registerForm.querySelector('button');
+            const originalText = btn.textContent;
+
+            try {
+                btn.textContent = 'جاري الإنشاء...';
+                btn.disabled = true;
+
+                const name = document.getElementById('regName').value;
+                const grade = document.getElementById('regGrade').value;
+                const section = document.getElementById('regSection').value || null; // Grade 10 is null
+                const pass = document.getElementById('regPass').value;
+
+                const result = await this.auth.register(name, grade, section, pass);
+
+                if (result.success) {
+                    // Should auto login
+                    window.location.hash = '#dashboard';
+                } else {
+                    document.getElementById('regError').textContent = result.message;
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                console.error("Register Error:", error);
+                document.getElementById('regError').textContent = 'حدث خطأ أثناء التسجيل';
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        // Teacher Login
+        teacherForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('tEmail').value;
+            const pass = document.getElementById('tPass').value;
+
+            try {
+                const result = await this.auth.login(email, pass, 'teacher');
+                if (result.success) {
+                    window.location.hash = '#teacher';
+                } else {
+                    document.getElementById('tError').textContent = 'بيانات المعلم غير صحيحة';
+                }
+            } catch (error) {
+                console.error("Teacher Login Error:", error);
+                document.getElementById('tError').textContent = 'خطأ في النظام';
             }
         });
     }

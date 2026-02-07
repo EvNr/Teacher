@@ -1,382 +1,357 @@
 
-import { appStore } from '../core/Store.js';
 import { DATA_STORE } from '../core/DataStore.js';
-import { Router } from '../core/Router.js';
-import { BRAND } from '../core/Brand.js';
+import { Auth } from '../core/Auth.js';
 import { ChatSystem } from '../core/ChatSystem.js';
+import { BRAND } from '../core/Brand.js';
 
 export class DashboardView {
-    constructor(container) {
-        this.container = container;
-        this.user = appStore.state.user;
-        this.chat = new ChatSystem((key) => this.handleSync(key));
-        this.chatState = { mode: 'GLOBAL', activePrivateId: null };
-        this.render();
-        this.checkMOTD();
-    }
+    constructor() {
+        this.app = document.getElementById('app');
+        this.auth = new Auth();
+        this.user = this.auth.checkSession();
+        this.activeTab = 'home';
 
-    handleSync(key) {
-        if (key === this.chat.storageKey || key === this.chat.privateKey) this.updateChatUI();
-        if (key === this.chat.notifKey) {
-            this.updateNotifications();
-            this.checkInstantPopup();
-        }
+        // Chat
+        this.chat = new ChatSystem((key) => this.onChatUpdate(key));
+        this.render();
     }
 
     render() {
-        const gradeData = DATA_STORE.CURRICULUM[this.user.grade] || { items: [], challenges: [] };
+        if (!this.user) { window.location.hash = '#login'; return; }
 
-        this.container.innerHTML = `
-            <!-- Navbar -->
-            <nav class="expert-nav">
-                <div style="font-weight:bold; font-size:1.2rem; color:var(--gilded-gold); display:flex; align-items:center; gap:10px;">
-                    <svg width="30" height="30" viewBox="0 0 100 100">
-                           <circle cx="50" cy="50" r="45" stroke="#c5a059" stroke-width="5" fill="none" />
-                           <text x="50" y="65" font-family="Tajawal" font-size="50" text-anchor="middle" fill="#c5a059" font-weight="bold">ص</text>
-                    </svg>
-                    أكاديمية صابرين
-                </div>
-
-                <div style="display:flex; gap:20px; align-items:center;">
-                    <div class="notif-container" id="notifBtn" style="position:relative; cursor:pointer;">
-                        <span style="font-size:1.5rem;">🔔</span>
-                        <span class="notif-badge" id="notifBadge" style="display:none; position:absolute; top:-5px; right:-5px; background:var(--danger-ruby); color:white; border-radius:50%; width:18px; height:18px; font-size:0.7rem; justify-content:center; align-items:center;">0</span>
-                    </div>
-
-                    <div style="text-align:left;">
-                        <div style="font-weight:bold; color:white;">${this.user.name}</div>
-                        <div style="font-size:0.8rem; color:var(--luxury-grey);">الصف ${this.user.grade}</div>
-                    </div>
-                    <div style="background:var(--gilded-gold); color:var(--royal-obsidian); padding:5px 15px; border-radius:20px; font-weight:bold;">
-                        ${this.user.xp || 0} XP
-                    </div>
-                    <button id="logoutBtn" class="btn-outline-gold" style="padding:5px 15px; font-size:0.8rem;">خروج</button>
-                </div>
-            </nav>
-
-            <main class="dashboard-grid fade-in">
-
-                <!-- Main Content -->
-                <div style="display:flex; flex-direction:column; gap:2rem;">
-
-                    <div class="expert-card">
-                        <h2 class="text-gold font-heading" style="margin-bottom:1rem;">مركز القياس والتدريب</h2>
-                        <p class="text-grey" style="margin-bottom:2rem;">محاكاة احترافية لاختبارات المركز الوطني.</p>
-
-                        <div style="display:grid; gap:15px;">
-                            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:15px; border-radius:12px;">
-                                <div>
-                                    <h4 class="text-white">القدرات العامة</h4>
-                                    <span class="text-grey" style="font-size:0.8rem;">كمي ولفظي | 25 دقيقة</span>
-                                </div>
-                                <button class="btn-gold start-test" data-test="qudrat">بدء المحاكاة</button>
-                            </div>
-                            <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:15px; border-radius:12px;">
-                                <div>
-                                    <h4 class="text-white">التحصيلي</h4>
-                                    <span class="text-grey" style="font-size:0.8rem;">رياضيات شامل | 40 دقيقة</span>
-                                </div>
-                                <button class="btn-gold start-test" data-test="tahsili">بدء المحاكاة</button>
-                            </div>
+        this.app.innerHTML = `
+            <div class="dashboard-layout">
+                <!-- SIDEBAR -->
+                <aside class="sidebar" id="sidebar">
+                    <div style="margin-bottom:2rem; padding-bottom:1rem; border-bottom:1px solid rgba(0,0,0,0.05);">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            ${BRAND.logoSvg.replace('width="60"', 'width="40"').replace('height="60"', 'height="40"')}
+                            <span style="font-family:'Cairo'; font-weight:800; color:var(--vision-emerald);">أكاديمية صابرين</span>
                         </div>
                     </div>
 
-                    <div class="expert-card">
-                        <h3 class="text-white font-heading" style="margin-bottom:1.5rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;">المكتبة الرقمية</h3>
-                        <div style="display:grid; gap:15px;">
-                            ${gradeData.items.map(item => `
-                                <a href="${item.link}" target="_blank" style="display:flex; gap:15px; align-items:center; padding:10px; border-radius:8px; transition:background 0.2s; hover:background:rgba(255,255,255,0.05);">
-                                    <div style="font-size:1.8rem;">${item.type === 'video' ? '📺' : '📚'}</div>
-                                    <div>
-                                        <div class="text-gold" style="font-weight:bold;">${item.title}</div>
-                                        <div class="text-grey" style="font-size:0.8rem;">${item.featured ? '⭐ محتوى مميز' : ''}</div>
-                                    </div>
-                                </a>
-                            `).join('')}
+                    <nav>
+                        <a class="nav-item active" data-tab="home">
+                            <span>🏠</span> الرئيسية
+                        </a>
+                        <a class="nav-item" data-tab="resources">
+                            <span>📚</span> المصادر التعليمية
+                        </a>
+                        <a class="nav-item" data-tab="exams">
+                            <span>📝</span> اختبارات المحاكاة
+                        </a>
+                        <a class="nav-item" data-tab="chat">
+                            <span>💬</span> مجتمع الطلاب
+                        </a>
+                    </nav>
+
+                    <div style="margin-top:auto; padding-top:1rem; border-top:1px solid rgba(0,0,0,0.05);">
+                        <div class="nav-item" id="logoutBtn" style="color:red;">
+                            <span>🚪</span> تسجيل الخروج
                         </div>
                     </div>
-                </div>
+                </aside>
 
-                <!-- Sidebar -->
-                <div style="display:flex; flex-direction:column; gap:2rem;">
-                    <div class="expert-card" style="border-top: 3px solid var(--danger-ruby);">
-                        <h3 class="text-white font-heading" style="margin-bottom:1rem;">التحديات الأسبوعية</h3>
-                        ${gradeData.challenges.map(c => `
-                            <div style="background:rgba(197, 48, 48, 0.1); padding:15px; border-radius:8px; margin-bottom:10px;">
-                                <h4 class="text-white">${c.title}</h4>
-                                <p class="text-grey" style="font-size:0.9rem; margin:5px 0;">${c.description}</p>
-                                <button class="btn-outline-gold" style="width:100%; font-size:0.8rem; margin-top:10px;">قبول التحدي (+${c.xp} XP)</button>
-                            </div>
-                        `).join('')}
-                    </div>
+                <!-- MAIN CONTENT -->
+                <main class="main-content" id="mainContent">
+                    <!-- Content Injected Here -->
+                </main>
 
-                    <div class="expert-card">
-                        <h3 class="text-white font-heading">تحليل الأداء</h3>
-                        <div style="margin-top:1.5rem;">
-                            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                                <span class="text-grey">الإتقان العام</span>
-                                <span class="text-gold">65%</span>
-                            </div>
-                            <div style="width:100%; background:rgba(255,255,255,0.1); height:6px; border-radius:3px;">
-                                <div style="width:65%; background:var(--gilded-gold); height:100%; border-radius:3px;"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Chat Widget -->
-                <div class="chat-widget">
-                    <div class="chat-interface" id="chatWindow">
-                        <div class="chat-header-lux" id="chatHeader">
-                            <span class="text-gold font-heading" id="chatTitle">الغرفة العامة</span>
-                            <div style="display:flex; gap:10px;">
-                                <span class="text-grey" style="cursor:pointer; display:none;" id="backToChatList">عودة</span>
-                                <span class="text-grey" style="cursor:pointer;" id="closeChat">✖</span>
-                            </div>
-                        </div>
-
-                        <div class="chat-tabs">
-                            <div class="chat-tab active" id="tabGlobal">عام</div>
-                            <div class="chat-tab" id="tabPrivate">خاص</div>
-                        </div>
-
-                        <div class="chat-area" id="chatBody"></div>
-
-                        <form class="chat-controls" id="chatForm">
-                            <input type="text" class="expert-input" placeholder="اكتب رسالتك..." required style="padding:10px;">
-                            <button type="submit" class="btn-gold" style="border-radius:50%; width:45px; height:45px; padding:0; display:flex; align-items:center; justify-content:center;">➤</button>
-                        </form>
-
-                        <!-- Search Overlay -->
-                        <div id="searchView" style="display:none; position:absolute; inset:0; background:var(--royal-obsidian); z-index:10; flex-direction:column; padding:20px;">
-                             <h4 class="text-gold" style="margin-bottom:15px;">بحث عن زميلة</h4>
-                             <input type="text" id="searchUser" class="expert-input" placeholder="الاسم..." style="margin-bottom:15px;">
-                             <div id="searchResults" style="flex:1; overflow-y:auto;"></div>
-                             <button id="closeSearch" class="btn-outline-gold" style="margin-top:10px;">إغلاق</button>
-                        </div>
-                    </div>
-                    <div class="chat-toggle" id="toggleChat">💬</div>
-                </div>
-
-            </main>
+                <!-- MOBILE TOGGLE -->
+                <button id="menuToggle" style="position:fixed; bottom:20px; left:20px; z-index:200; width:50px; height:50px; border-radius:50%; background:var(--vision-emerald); color:white; border:none; box-shadow:0 4px 15px rgba(0,0,0,0.2); font-size:1.5rem;">
+                    ☰
+                </button>
+            </div>
         `;
 
         this.attachEvents();
-        this.updateChatUI();
-        this.updateNotifications();
-    }
-
-    checkInstantPopup() {
-        const notifs = this.chat.getNotifications();
-        if (notifs.length > 0) {
-            const latest = notifs[0];
-            const isFresh = (Date.now() - latest.id) < 5000;
-
-            if (isFresh && latest.type === 'alert' && (latest.target === 'ALL' || latest.target === this.user.name)) {
-                alert(`🔴 تنبيه هام:\n${latest.title}\n\n${latest.text}`);
-            }
-        }
-    }
-
-    updateNotifications() {
-        const notifs = this.chat.getNotifications().filter(n => n.target === 'ALL' || n.target === this.user.name);
-        const unreadCount = notifs.length;
-
-        const badge = document.getElementById('notifBadge');
-        if (badge) {
-            badge.style.display = unreadCount > 0 ? 'flex' : 'none';
-            badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
-        }
-    }
-
-    checkMOTD() {
-        const seen = sessionStorage.getItem('motd_seen');
-        const motd = this.chat.getMOTD();
-
-        if (!seen && motd && motd.active) {
-            alert(`📢 رسالة اليوم:\n\n${motd.title}\n${motd.message}`);
-            sessionStorage.setItem('motd_seen', 'true');
-        }
-    }
-
-    updateChatUI() {
-        const body = document.getElementById('chatBody');
-        const footer = document.getElementById('chatForm');
-        if (!body) return;
-
-        if (this.chatState.mode === 'GLOBAL') {
-            const messages = this.chat.getMessages();
-            footer.style.display = 'flex';
-            body.innerHTML = this.renderMessages(messages);
-        }
-        else if (this.chatState.mode === 'PRIVATE_LIST') {
-            const chats = this.chat.getPrivateChats();
-            const myChats = Object.keys(chats).filter(id => chats[id].participants.includes(this.user.name));
-
-            footer.style.display = 'none';
-            body.innerHTML = `
-                <button id="startNewChat" class="btn-gold" style="width:100%; margin-bottom:15px; border-radius:10px;">+ محادثة جديدة</button>
-                <div style="display:flex; flex-direction:column; gap:10px;">
-                    ${myChats.map(id => {
-                        const otherName = chats[id].participants.find(p => p !== this.user.name);
-                        const lastMsg = chats[id].messages[chats[id].messages.length - 1];
-                        return `
-                            <div class="private-chat-item" data-id="${id}" style="padding:15px; background:rgba(255,255,255,0.05); border-radius:12px; cursor:pointer;">
-                                <div class="text-gold" style="font-weight:bold;">${otherName}</div>
-                                <div class="text-grey" style="font-size:0.8rem; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">${lastMsg ? lastMsg.text : '...'}</div>
-                            </div>
-                        `;
-                    }).join('')}
-                    ${myChats.length === 0 ? '<div class="text-grey" style="text-align:center;">لا توجد محادثات</div>' : ''}
-                </div>
-            `;
-
-            body.querySelectorAll('.private-chat-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    this.chatState.mode = 'PRIVATE_CHAT';
-                    this.chatState.activePrivateId = item.dataset.id;
-                    this.updateChatUI();
-                });
-            });
-
-            const btn = document.getElementById('startNewChat');
-            if (btn) btn.addEventListener('click', () => {
-                document.getElementById('searchView').style.display = 'flex';
-            });
-        }
-        else if (this.chatState.mode === 'PRIVATE_CHAT') {
-            const chat = this.chat.getPrivateChats()[this.chatState.activePrivateId];
-            if (chat) {
-                const otherName = chat.participants.find(p => p !== this.user.name);
-                document.getElementById('chatTitle').textContent = otherName;
-                document.getElementById('backToChatList').style.display = 'block';
-                footer.style.display = 'flex';
-                body.innerHTML = this.renderMessages(chat.messages);
-            }
-        }
-
-        body.scrollTop = body.scrollHeight;
-    }
-
-    renderMessages(messages) {
-        return messages.map(msg => {
-            const isMe = msg.sender === this.user.name;
-            const type = isMe ? 'outgoing' : 'incoming';
-            return `
-                <div class="msg-bubble ${type}">
-                    <div style="font-size:0.7rem; opacity:0.7; margin-bottom:5px;">${msg.sender}</div>
-                    ${msg.text}
-                </div>
-            `;
-        }).join('');
+        this.switchTab('home');
     }
 
     attachEvents() {
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            appStore.setUser(null);
-            Router.navigate('login');
-        });
+        // Navigation
+        document.querySelectorAll('.nav-item[data-tab]').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                this.switchTab(item.dataset.tab);
 
-        this.container.querySelectorAll('.start-test').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                sessionStorage.setItem('active_test', e.target.dataset.test);
-                Router.navigate('exam');
+                // Close mobile menu
+                if (window.innerWidth < 900) {
+                    document.getElementById('sidebar').classList.remove('active');
+                }
             });
         });
 
-        const win = document.getElementById('chatWindow');
-        const toggle = document.getElementById('toggleChat');
-        toggle.addEventListener('click', () => win.classList.add('active'));
-        document.getElementById('closeChat').addEventListener('click', () => win.classList.remove('active'));
-
-        const tabGlobal = document.getElementById('tabGlobal');
-        const tabPrivate = document.getElementById('tabPrivate');
-
-        tabGlobal.addEventListener('click', () => {
-            this.chatState.mode = 'GLOBAL';
-            tabGlobal.classList.add('active'); tabPrivate.classList.remove('active');
-            this.updateChatUI();
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            this.auth.logout();
         });
 
-        tabPrivate.addEventListener('click', () => {
-            this.chatState.mode = 'PRIVATE_LIST';
-            tabPrivate.classList.add('active'); tabGlobal.classList.remove('active');
-            this.updateChatUI();
+        // Mobile Toggle
+        document.getElementById('menuToggle').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('active');
         });
+    }
 
-        document.getElementById('backToChatList').addEventListener('click', () => {
-            this.chatState.mode = 'PRIVATE_LIST';
-            document.getElementById('chatTitle').textContent = 'الغرفة العامة';
-            document.getElementById('backToChatList').style.display = 'none';
-            this.updateChatUI();
-        });
+    switchTab(tab) {
+        this.activeTab = tab;
+        const main = document.getElementById('mainContent');
+        main.innerHTML = ''; // Clear
 
+        switch(tab) {
+            case 'home': this.renderHome(main); break;
+            case 'resources': this.renderResources(main); break;
+            case 'exams': this.renderExams(main); break;
+            case 'chat': this.renderChat(main); break;
+        }
+    }
+
+    // --- HOME TAB ---
+    renderHome(container) {
+        const hour = new Date().getHours();
+        const greeting = hour < 12 ? 'صباح الخير' : 'مساء الخير';
+
+        container.innerHTML = `
+            <header style="margin-bottom:2rem; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <h1 style="font-family:'Cairo'; font-weight:800; color:var(--vision-emerald); font-size:2rem;">
+                        ${greeting}، ${this.user.name.split(' ')[0]}
+                    </h1>
+                    <p style="color:#666;">مرحباً بك في لوحة التحكم الخاصة بك.</p>
+                </div>
+                <div class="glass-card" style="padding:10px 20px; background:var(--grad-gold); color:white;">
+                    <span style="font-weight:bold; font-size:1.2rem;">${this.user.xp || 0} XP</span>
+                </div>
+            </header>
+
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:20px;">
+                <!-- Card 1: Next Exam -->
+                <div class="glass-card">
+                    <h3 style="color:var(--vision-emerald); margin-bottom:10px;">📅 الاختبار القادم</h3>
+                    <p style="font-size:0.9rem; color:#555;">اختبار القدرات التجريبي رقم 2</p>
+                    <div style="margin-top:15px; width:100%; height:6px; background:#eee; border-radius:3px;">
+                        <div style="width:70%; height:100%; background:var(--vision-emerald); border-radius:3px;"></div>
+                    </div>
+                    <small style="color:#888;">متبقي 3 أيام</small>
+                </div>
+
+                <!-- Card 2: Recent Resource -->
+                <div class="glass-card" style="background:linear-gradient(135deg, #fff 0%, #f9f9f9 100%);">
+                    <h3 style="color:var(--vision-slate); margin-bottom:10px;">📖 آخر درس</h3>
+                    <p>الرياضيات 2-1: المصفوفات</p>
+                    <button class="btn btn-outline" style="margin-top:10px; padding:8px 16px; font-size:0.8rem;">استكمال</button>
+                </div>
+            </div>
+
+            <!-- Global Alert / MOTD -->
+            <div id="motdArea" style="margin-top:2rem;"></div>
+        `;
+
+        this.updateMOTD();
+    }
+
+    // --- RESOURCES TAB ---
+    renderResources(container) {
+        const grade = this.user.grade || "10";
+        const curriculum = DATA_STORE.CURRICULUM[grade];
+
+        if (!curriculum) {
+            container.innerHTML = `<div class="glass-card">لا توجد مصادر متاحة لصفك الدراسي حالياً.</div>`;
+            return;
+        }
+
+        let itemsHtml = curriculum.items.map(item => `
+            <div class="glass-card" style="display:flex; flex-direction:column; gap:10px;">
+                <div style="font-size:2rem;">${item.type === 'pdf' ? '📄' : '🎥'}</div>
+                <h4 style="font-weight:700;">${item.title}</h4>
+                <a href="${item.link}" target="_blank" class="btn btn-primary" style="margin-top:auto;">
+                    ${item.type === 'pdf' ? 'تحميل PDF' : 'مشاهدة'}
+                </a>
+            </div>
+        `).join('');
+
+        container.innerHTML = `
+            <h2 style="margin-bottom:1rem; font-family:'Cairo';">${curriculum.title}</h2>
+            <p style="margin-bottom:2rem; color:#666;">${curriculum.subtitle}</p>
+            <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap:20px;">
+                ${itemsHtml}
+            </div>
+        `;
+    }
+
+    // --- EXAMS TAB ---
+    renderExams(container) {
+        container.innerHTML = `
+            <h2 style="margin-bottom:2rem;">اختبارات المحاكاة (قياس)</h2>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:20px;">
+
+                <div class="glass-card" style="border-top:5px solid var(--vision-emerald);">
+                    <h3>القدرات العامة</h3>
+                    <p style="margin:10px 0; color:#666;">اختبار تجريبي يحاكي الاختبار الحقيقي (كمي/لفظي).</p>
+                    <button class="btn btn-primary" onclick="window.location.hash='#exam/qudrat'">بدء الاختبار</button>
+                </div>
+
+                <div class="glass-card" style="border-top:5px solid var(--vision-gold);">
+                    <h3>التحصيلي</h3>
+                    <p style="margin:10px 0; color:#666;">اختبار شامل للمقررات (رياضيات 1، 2، 3).</p>
+                    <button class="btn btn-gold" onclick="window.location.hash='#exam/tahsili'">بدء الاختبار</button>
+                </div>
+
+            </div>
+        `;
+    }
+
+    // --- CHAT TAB ---
+    renderChat(container) {
+        container.innerHTML = `
+            <div class="glass-card" style="height:calc(100vh - 100px); padding:0; overflow:hidden; display:flex; flex-direction:column;">
+                <!-- Chat Header -->
+                <div class="chat-header" style="background:var(--vision-emerald); color:white;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:1.5rem;">💬</span>
+                        <div>
+                            <h3 style="margin:0;">مجتمع الطلاب</h3>
+                            <small id="chatStatus" style="opacity:0.8;">متصل</small>
+                        </div>
+                    </div>
+                    <div>
+                        <button class="btn btn-outline" style="border-color:white; color:white; font-size:0.8rem;" id="toggleChatMode">
+                            الخاص / العام
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Messages Area -->
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Dynamic -->
+                </div>
+
+                <!-- Input Area -->
+                <form class="chat-input-area" id="chatForm">
+                    <input type="text" class="input-modern" placeholder="اكتب رسالتك هنا..." required autocomplete="off">
+                    <button type="submit" class="btn btn-primary" style="padding:0 20px;">➤</button>
+                </form>
+            </div>
+
+            <!-- Search Modal (Hidden by default) -->
+            <div id="searchModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:center;">
+                <div class="glass-card" style="width:90%; max-width:400px; max-height:80vh; overflow-y:auto;">
+                    <h3>بحث عن طالبة</h3>
+                    <input type="text" id="searchUser" class="input-modern" placeholder="الاسم...">
+                    <div id="searchResults" style="margin-top:10px;"></div>
+                    <button class="btn btn-outline" style="margin-top:10px; width:100%;" onclick="document.getElementById('searchModal').style.display='none'">إغلاق</button>
+                </div>
+            </div>
+        `;
+
+        this.attachChatEvents();
+        this.chat.poll(); // Force update
+    }
+
+    attachChatEvents() {
+        const form = document.getElementById('chatForm');
+        const msgs = document.getElementById('chatMessages');
+        const toggle = document.getElementById('toggleChatMode');
+        const searchModal = document.getElementById('searchModal');
         const searchInput = document.getElementById('searchUser');
-        const searchResults = document.getElementById('searchResults');
 
+        // Mode Switch
+        toggle.addEventListener('click', () => {
+            searchModal.style.display = 'flex';
+        });
+
+        // Search Logic
         searchInput.addEventListener('input', (e) => {
             const val = e.target.value.toLowerCase();
-            if (val.length < 2) { searchResults.innerHTML = ''; return; }
+            const res = document.getElementById('searchResults');
+            if (val.length < 2) { res.innerHTML = ''; return; }
 
-            const matches = [];
-            const roster = DATA_STORE.STUDENT_ROSTER;
-            const scan = (arr) => {
-                arr.forEach(name => {
-                    if (name !== this.user.name && name.toLowerCase().includes(val)) matches.push(name);
-                });
-            };
+            // Flatten Roster
+            const allStudents = [];
+            // Grade 10
+            DATA_STORE.STUDENT_ROSTER["10"].forEach(n => allStudents.push(n));
+            // 11/12
+            ['11','12'].forEach(g => {
+                Object.values(DATA_STORE.STUDENT_ROSTER[g]).forEach(arr => arr.forEach(n => allStudents.push(n)));
+            });
+            // Teacher
+            allStudents.push(DATA_STORE.TEACHER.name);
 
-            if (roster["10"]) scan(roster["10"]);
-            Object.values(roster["11"]).forEach(scan);
-            Object.values(roster["12"]).forEach(scan);
-            if ("الأستاذة صابرين".includes(val)) matches.push("الأستاذة صابرين");
+            const matches = allStudents.filter(n => n.includes(val) && n !== this.user.name);
 
-            searchResults.innerHTML = matches.map(name => `
-                <div class="search-item text-white" style="padding:15px; border-bottom:1px solid rgba(255,255,255,0.1); cursor:pointer;">${name}</div>
+            res.innerHTML = matches.map(n => `
+                <div class="search-item" style="padding:10px; border-bottom:1px solid #eee; cursor:pointer;">${n}</div>
             `).join('');
 
-            searchResults.querySelectorAll('.search-item').forEach(item => {
+            res.querySelectorAll('.search-item').forEach(item => {
                 item.addEventListener('click', () => {
-                    const targetName = item.textContent;
-                    this.startPrivateChat(targetName);
-                    document.getElementById('searchView').style.display = 'none';
-                    searchInput.value = '';
+                    const target = item.textContent;
+                    // Init Private Chat
+                    this.chat.initPrivateChat(this.user, target);
+                    searchModal.style.display = 'none';
+                    // Need to handle private chat state in View...
+                    // For simplicity in this plan, let's just alert
+                    alert(`تم بدء محادثة خاصة مع ${target}. (النسخة التجريبية)`);
                 });
             });
         });
 
-        document.getElementById('closeSearch').addEventListener('click', () => {
-            document.getElementById('searchView').style.display = 'none';
-        });
-
-        document.getElementById('chatForm').addEventListener('submit', (e) => {
+        // Send Message
+        form.addEventListener('submit', (e) => {
             e.preventDefault();
-            const input = e.target.querySelector('input');
+            const input = form.querySelector('input');
             const text = input.value.trim();
             if (text) {
-                if (this.chatState.mode === 'GLOBAL') {
-                    this.chat.sendMessage(this.user, text);
-                } else if (this.chatState.mode === 'PRIVATE_CHAT') {
-                    const chat = this.chat.getPrivateChats()[this.chatState.activePrivateId];
-                    if (chat) {
-                        const recipient = chat.participants.find(p => p !== this.user.name);
-                        this.chat.sendPrivateMessage(this.user, recipient, text);
-                    }
-                }
+                this.chat.sendMessage(this.user, text);
                 input.value = '';
             }
         });
     }
 
-    startPrivateChat(targetName) {
-        const participants = [this.user.name, targetName].sort();
-        const chatId = participants.join('_');
+    onChatUpdate(key) {
+        // Called when poll finds new data
+        if (this.activeTab === 'chat') {
+            const msgs = document.getElementById('chatMessages');
+            if (!msgs) return;
 
-        // Ensure Init
-        this.chat.initPrivateChat(this.user, targetName);
+            const messages = this.chat.getMessages(); // Global only for now
+            msgs.innerHTML = messages.map(msg => {
+                const isMe = msg.sender === this.user.name;
+                const roleColor = msg.role === 'teacher' ? 'var(--vision-gold)' : '#666';
 
-        this.chatState.activePrivateId = chatId;
-        this.chatState.mode = 'PRIVATE_CHAT';
-        this.updateChatUI();
+                return `
+                    <div class="chat-bubble ${isMe ? 'mine' : 'theirs'}">
+                        <div style="font-size:0.75rem; color:${isMe ? 'rgba(255,255,255,0.8)' : roleColor}; margin-bottom:4px;">
+                            ${msg.sender} ${msg.role === 'teacher' ? '★' : ''}
+                        </div>
+                        ${msg.text}
+                        <div style="font-size:0.6rem; text-align:left; opacity:0.6; margin-top:5px;">${msg.time}</div>
+                    </div>
+                `;
+            }).join('');
+
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        // MOTD Update
+        if (this.activeTab === 'home') this.updateMOTD();
+    }
+
+    updateMOTD() {
+        const area = document.getElementById('motdArea');
+        if (!area) return;
+
+        const motd = this.chat.getMOTD();
+        if (motd && motd.active) {
+            area.innerHTML = `
+                <div class="glass-card" style="background:rgba(255,0,0,0.05); border-right:4px solid red;">
+                    <h4 style="color:red;">🔔 تنبيه هام: ${motd.title}</h4>
+                    <p>${motd.message}</p>
+                </div>
+            `;
+        } else {
+            area.innerHTML = '';
+        }
     }
 }

@@ -1,15 +1,11 @@
 
-import { DATA_STORE } from './DataStore.js';
-
 /**
  * Chat System Core
- * Refactored to use PHP Backend for real cross-device communication.
+ * Vision 2030 Edition: Real-time Communication Bridge.
  */
 export class ChatSystem {
     constructor(callback) {
         this.callback = callback; // Function to update UI
-        this.storageKey = 'SABREEN_CHAT_DB';
-        this.privateKey = 'SABREEN_PRIVATE_DB';
         this.cache = {
             global: [],
             private: {},
@@ -37,8 +33,7 @@ export class ChatSystem {
                 this.cache = data;
 
                 if (hashStart !== hashEnd) {
-                    this.notify(this.storageKey);
-                    this.notify(this.privateKey);
+                    if (this.callback) this.callback('UPDATE');
                 }
             }
         } catch (e) {
@@ -54,11 +49,15 @@ export class ChatSystem {
         return this.cache.private || {};
     }
 
+    getMOTD() {
+        return this.cache.motd || {};
+    }
+
     initPrivateChat(sender, recipientName) {
         const participants = [sender.name, recipientName].sort();
         const chatId = participants.join('_');
 
-        // We notify server to init if needed, but mostly we just need the local ID
+        // We notify server to init if needed
         fetch('api/chat_write.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -73,24 +72,16 @@ export class ChatSystem {
         return chatId;
     }
 
-    getNotifications() {
-        // Return global alerts
-        return this.cache.alerts || [];
-    }
-
     sendMessage(user, text) {
         const cleanText = this.filterProfanity(text);
         const msg = {
             sender: user.name,
             role: user.role || 'student',
             text: cleanText,
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
         };
 
-        // Optimistic UI Update
-        // this.cache.global.push(msg); // Optional: wait for server is safer for consistency
-        // this.notify(this.storageKey);
-
+        // Send to Server
         fetch('api/chat_write.php', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -103,96 +94,13 @@ export class ChatSystem {
         return msg;
     }
 
-    sendPrivateMessage(sender, recipientName, text) {
-        const participants = [sender.name, recipientName].sort();
-        const chatId = participants.join('_');
-
-        const cleanText = this.filterProfanity(text);
-        const msg = {
-            sender: sender.name,
-            text: cleanText,
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            read: false
-        };
-
-        fetch('api/chat_write.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                type: 'PRIVATE',
-                chatId: chatId,
-                participants: participants,
-                payload: msg
-            })
-        }).then(() => this.poll());
-    }
-
-    sendNotification(targetUser, data) {
-        if (targetUser === 'ALL') {
-            fetch('api/announcements_write.php', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    type: 'ALERT',
-                    payload: {
-                        target: 'ALL',
-                        title: data.title,
-                        text: data.text,
-                        time: new Date().toLocaleString()
-                    }
-                })
-            }).then(() => this.poll());
-        }
-        // Private notifications are handled implicitly by chat updates
-    }
-
-    deleteMessage(id) {
-        fetch('api/chat_write.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                type: 'GLOBAL',
-                action: 'DELETE',
-                id: id
-            })
-        }).then(() => this.poll());
-    }
-
     filterProfanity(text) {
-        const badWords = ['badword', 'stupid', 'ghabi', 'kalb', 'hmar'];
+        const badWords = ['badword', 'stupid', 'ghabi', 'kalb', 'hmar', 'كلب', 'حمار', 'غبي'];
         let cleanText = text;
         badWords.forEach(word => {
             const reg = new RegExp(word, 'gi');
             cleanText = cleanText.replace(reg, '***');
         });
         return cleanText;
-    }
-
-    notify(key) {
-        if (this.callback) this.callback(key);
-    }
-
-    // --- MOTD Logic ---
-
-    getMOTD() {
-        return this.cache.motd || {};
-    }
-
-    setMOTD(title, message, active = true) {
-        const motd = {
-            title,
-            message,
-            active,
-            date: new Date().toISOString().split('T')[0]
-        };
-
-        fetch('api/announcements_write.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                type: 'MOTD',
-                payload: motd
-            })
-        }).then(() => this.poll());
     }
 }
