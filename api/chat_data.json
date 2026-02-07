@@ -1,11 +1,49 @@
 {
     "global": [
-        { "sender": "Admin", "role": "teacher", "text": "Welcome to the new system!", "time": "10:00 AM" }
+        {
+            "sender": "Admin",
+            "role": "teacher",
+            "text": "Welcome to the new system!",
+            "time": "10:00 AM"
+        }
     ],
-    "private": {},
+    "private": [],
     "motd": {
         "active": true,
         "title": "Welcome",
-        "message": "Welcome to Sabreen Academy Vision 2030 Platform."
-    }
+        "message": "Welcome to Sabreen Academy Vision 2030 Platform.",
+        "date": "2025-05-20"
+    },
+    "alerts": [
+        {
+            "title": "Test Alert",
+            "message": "This is a real-time notification test.",
+            "date": "2025-05-20T10:00:00Z"
+        },
+        {
+            "title": "Test Alert",
+            "message": "This is a real-time notification test.",
+            "date": "2026-02-07T01:19:14.603054Z"
+        },
+        {
+            "title": "Test Alert",
+            "message": "This is a real-time notification test.",
+            "date": "2026-02-07T01:21:18.602016+00:00"
+        },
+        {
+            "title": "Test Alert",
+            "message": "This is a real-time notification test.",
+            "date": "2026-02-07T01:22:39.351955+00:00"
+        },
+        {
+            "title": "Test Alert",
+            "message": "This is a real-time notification test.",
+            "date": "2026-02-07T01:24:10.811925+00:00"
+        },
+        {
+            "title": "Test Alert",
+            "message": "This is a real-time notification test.",
+            "date": "2026-02-07T01:28:39.383580+00:00"
+        }
+    ]
 }

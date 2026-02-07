@@ -5,6 +5,12 @@ $file = 'chat_data.json';
 if (file_exists($file)) {
     echo file_get_contents($file);
 } else {
-    echo json_encode(["global" => [], "private" => {}, "motd" => {}]);
+    // Default structure
+    echo json_encode([
+        "global" => [],
+        "private" => (object)[],
+        "motd" => (object)[],
+        "alerts" => []
+    ]);
 }
 ?>

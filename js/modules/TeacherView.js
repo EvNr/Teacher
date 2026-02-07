@@ -9,12 +9,16 @@ export class TeacherView {
     constructor(container) {
         this.container = container;
         this.user = appStore.state.user;
-        this.chat = new ChatSystem((key) => this.handleSync(key));
+        this.chat = new ChatSystem((key, data) => this.handleSync(key, data));
         this.activeTab = 'stats';
         this.render();
     }
 
-    handleSync(key) {
+    handleSync(key, data) {
+        if (key === 'NEW_ALERT') {
+            const dot = document.getElementById('bellDot');
+            if (dot) dot.style.display = 'block';
+        }
         if (key === 'UPDATE' && this.activeTab === 'chat') {
             this.renderChatList();
         }
@@ -53,8 +57,22 @@ export class TeacherView {
 
                 <!-- MAIN CONTENT -->
                 <main class="main-content" id="mainContent">
-                    <!-- Dynamic Content -->
+                    <!-- Header with Bell -->
+                    <div style="display:flex; justify-content:flex-end; padding-bottom:1rem; align-items:center; gap:15px;">
+                         <div id="bellIcon" style="position:relative; cursor:pointer; font-size:1.4rem;">
+                            🔔
+                            <span id="bellDot" style="display:none; position:absolute; top:0; right:0; width:10px; height:10px; background:red; border-radius:50%;"></span>
+                         </div>
+                         <div style="font-weight:bold; color:var(--vision-emerald);">${this.user.name}</div>
+                    </div>
+                    <div id="tabContent"></div>
                 </main>
+            </div>
+
+            <!-- Notifications Modal -->
+            <div id="notifModal" style="display:none; position:absolute; top:60px; left:20px; width:300px; background:white; box-shadow:0 5px 20px rgba(0,0,0,0.1); border-radius:10px; z-index:100; padding:15px;">
+                <h4 style="margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:5px;">التنبيهات</h4>
+                <div id="notifList" style="max-height:200px; overflow-y:auto; font-size:0.9rem;"></div>
             </div>
         `;
 
@@ -77,11 +95,41 @@ export class TeacherView {
             appStore.setUser(null);
             Router.navigate('login');
         });
+
+        // Bell
+        const bell = document.getElementById('bellIcon');
+        const modal = document.getElementById('notifModal');
+        bell.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const alerts = this.chat.getRecentAlerts();
+            const list = document.getElementById('notifList');
+
+            if (alerts.length === 0) {
+                list.innerHTML = '<div style="padding:10px; text-align:center; color:#999;">لا توجد تنبيهات</div>';
+            } else {
+                list.innerHTML = alerts.map(a => `
+                    <div style="padding:10px; border-bottom:1px solid #f5f5f5;">
+                        <div style="font-weight:bold; color:var(--vision-emerald);">${a.title}</div>
+                        <div>${a.message}</div>
+                        <div style="font-size:0.7rem; color:#aaa; margin-top:2px;">${new Date(a.date).toLocaleTimeString('ar-SA')}</div>
+                    </div>
+                `).join('');
+            }
+
+            modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
+            document.getElementById('bellDot').style.display = 'none'; // Clear dot
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!modal.contains(e.target) && e.target !== bell) {
+                modal.style.display = 'none';
+            }
+        });
     }
 
     switchTab(tab) {
         this.activeTab = tab;
-        const main = document.getElementById('mainContent');
+        const main = document.getElementById('tabContent');
         main.innerHTML = '';
 
         switch(tab) {
@@ -111,39 +159,26 @@ export class TeacherView {
 
             <!-- Global Actions -->
             <div class="glass-card">
-                <h3 style="margin-bottom:1rem;">إرسال تنبيه عام (MOTD)</h3>
-                <form id="motdForm">
+                <h3 style="margin-bottom:1rem;">إرسال تنبيه عاجل (Pop-up)</h3>
+                <form id="alertForm">
                     <div class="input-group">
-                        <input type="text" id="motdTitle" class="input-modern" placeholder="عنوان التنبيه">
+                        <input type="text" id="alertTitle" class="input-modern" placeholder="عنوان التنبيه" required>
                     </div>
                     <div class="input-group">
-                        <textarea id="motdMsg" class="input-modern" style="height:80px;" placeholder="نص التنبيه..."></textarea>
+                        <textarea id="alertMsg" class="input-modern" style="height:80px;" placeholder="نص التنبيه..." required></textarea>
                     </div>
-                    <div style="display:flex; gap:10px; align-items:center;">
-                        <input type="checkbox" id="motdActive" checked>
-                        <label>تفعيل</label>
-                        <button type="submit" class="btn btn-primary" style="margin-right:auto;">تحديث</button>
-                    </div>
+                    <button type="submit" class="btn btn-primary">إرسال للجميع</button>
                 </form>
             </div>
         `;
 
-        // Pre-fill
-        const current = this.chat.getMOTD();
-        if (current) {
-            document.getElementById('motdTitle').value = current.title || '';
-            document.getElementById('motdMsg').value = current.message || '';
-            document.getElementById('motdActive').checked = current.active;
-        }
-
-        document.getElementById('motdForm').addEventListener('submit', (e) => {
+        document.getElementById('alertForm').addEventListener('submit', (e) => {
             e.preventDefault();
-            this.chat.setMOTD(
-                document.getElementById('motdTitle').value,
-                document.getElementById('motdMsg').value,
-                document.getElementById('motdActive').checked
-            );
-            alert('تم تحديث التنبيه العام.');
+            const title = document.getElementById('alertTitle').value;
+            const msg = document.getElementById('alertMsg').value;
+            this.chat.sendAlert(title, msg);
+            alert('تم إرسال التنبيه العاجل للطالبات.');
+            document.getElementById('alertForm').reset();
         });
     }
 
@@ -175,35 +210,17 @@ export class TeacherView {
                 <div>
                     <span style="font-weight:bold; color:var(--vision-emerald);">${msg.sender}</span>
                     <span style="color:#888; font-size:0.8rem; margin-right:10px;">${msg.time}</span>
-                    <p style="margin-top:5px;">${msg.text}</p>
+                    <p style="margin-top:5px;">${this.chat.escapeHtml(msg.text)}</p>
                 </div>
                 <button class="btn btn-outline" style="color:red; border-color:red; padding:5px 10px; font-size:0.8rem;" onclick="window.deleteMsg(${idx})">حذف</button>
             </div>
         `).join('');
 
-        // Attach global handler for deletion (simplified for this context)
         window.deleteMsg = (idx) => {
             if (confirm('حذف هذه الرسالة؟')) {
-                // In a real app, send ID. Here we mock via rewriting array
-                // For this simulation, we will fetch read, slice, write back
-                this.deleteMessageAtIndex(idx);
+                this.chat.deleteMessage(idx);
             }
         };
-    }
-
-    async deleteMessageAtIndex(index) {
-        // Hacky simulation for MVP
-        const res = await fetch('api/chat_read.php');
-        const data = await res.json();
-        data.global.splice(index, 1);
-
-        await fetch('api/chat_write.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ type: 'OVERWRITE', payload: data })
-        });
-
-        this.chat.poll(); // Update UI
     }
 
     // --- TAB 3: ROSTER ---
@@ -220,7 +237,7 @@ export class TeacherView {
                             <th style="padding:10px; text-align:right;">الاسم</th>
                             <th style="padding:10px; text-align:right;">الصف</th>
                             <th style="padding:10px; text-align:center;">الحالة</th>
-                            <th style="padding:10px; text-align:center;">XP</th>
+                            <th style="padding:10px; text-align:center;">خيارات</th>
                         </tr>
                     </thead>
                     <tbody id="rosterBody"></tbody>
@@ -231,7 +248,6 @@ export class TeacherView {
         const renderRows = (filter = '') => {
             const tbody = document.getElementById('rosterBody');
             const all = this.getAllStudents();
-
             const filtered = all.filter(s => s.name.includes(filter));
 
             tbody.innerHTML = filtered.map(s => `
@@ -243,9 +259,24 @@ export class TeacherView {
                             ${s.active ? 'مفعل' : 'جديد'}
                         </span>
                     </td>
-                    <td style="padding:10px; text-align:center;">${s.xp}</td>
+                    <td style="padding:10px; text-align:center;">
+                        <button class="btn btn-outline" style="padding:5px 10px; font-size:0.8rem;" onclick="window.startTeacherChat('${s.name}')">💬</button>
+                    </td>
                 </tr>
             `).join('');
+        };
+
+        window.startTeacherChat = (studentName) => {
+            // Initiate chat
+            const chatId = this.chat.initPrivateChat(this.user, studentName);
+            // Switch to Chat Tab
+            this.container.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            this.container.querySelector('.nav-item[data-tab="chat"]').classList.add('active');
+            this.switchTab('chat');
+            // Wait for poll then filter? For MVP, we just switch and let them find it or we force logic
+            // Ideally: this.chatState.mode = 'PRIVATE_CHAT'; this.chatState.activePrivateId = chatId;
+            // But TeacherView needs to implement Private Chat UI first (currently only Global Manager is implemented in renderChatManager)
+            alert(`تم بدء المحادثة مع ${studentName}. انتقل إلى تبويب المحادثات.`);
         };
 
         renderRows();
@@ -256,18 +287,15 @@ export class TeacherView {
         const students = [];
         const roster = DATA_STORE.STUDENT_ROSTER;
 
-        // Helper to check auth status
         const getStatus = (name) => {
             const rec = DATA_STORE.AUTH_DB[name];
             return { active: !!rec, xp: rec ? rec.xp : 0 };
         };
 
-        // 10
         roster["10"].forEach(name => {
             students.push({ name, grade: "10", section: null, ...getStatus(name) });
         });
 
-        // 11/12
         ['11', '12'].forEach(g => {
             Object.keys(roster[g]).forEach(s => {
                 roster[g][s].forEach(name => {

@@ -11,7 +11,7 @@ if (file_exists($file)) {
     $data = json_decode(file_get_contents($file), true);
 }
 if (!$data) {
-    $data = ["global" => [], "private" => [], "motd" => []];
+    $data = ["global" => [], "private" => [], "motd" => [], "alerts" => []];
 }
 
 // Handle Write
@@ -30,15 +30,25 @@ if ($input) {
         // Set MOTD
         $data['motd'] = $input['payload'];
     }
+    elseif ($type === 'ALERT') {
+        // Add Alert
+        if (!isset($data['alerts'])) $data['alerts'] = [];
+        $data['alerts'][] = $input['payload'];
+        // Keep last 10 alerts
+        if (count($data['alerts']) > 10) {
+            $data['alerts'] = array_slice($data['alerts'], -10);
+        }
+    }
     elseif ($type === 'OVERWRITE') {
         // Replace full data (used for deletion)
-        // Ensure we only overwrite global messages to be safe
         if (isset($input['payload']['global'])) {
             $data['global'] = $input['payload']['global'];
         }
     }
     elseif ($type === 'PRIVATE') {
         // Handle Private Chat Init
+        if (!isset($data['private'])) $data['private'] = [];
+
         if (isset($input['action']) && $input['action'] === 'INIT') {
             $chatId = $input['chatId'];
             if (!isset($data['private'][$chatId])) {
@@ -46,6 +56,12 @@ if ($input) {
                     'participants' => $input['participants'],
                     'messages' => []
                 ];
+            }
+        }
+        elseif (isset($input['action']) && $input['action'] === 'SEND') {
+            $chatId = $input['chatId'];
+            if (isset($data['private'][$chatId])) {
+                $data['private'][$chatId]['messages'][] = $input['payload'];
             }
         }
     }
